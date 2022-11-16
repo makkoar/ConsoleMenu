@@ -16,6 +16,8 @@
     <ToolCommandName>$(TargetName)</ToolCommandName>
     <AssemblyVersion>2.11.17.1</AssemblyVersion>
     <FileVersion>2.11.17.1</FileVersion>
+	  <VersionPrefix>2.11.17.1</VersionPrefix>
+	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
 </Project>
