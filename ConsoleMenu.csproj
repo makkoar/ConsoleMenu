@@ -14,9 +14,9 @@
     <PackageTags>Консоль, Console, Menu, Меню</PackageTags>
     <PackAsTool>False</PackAsTool>
     <ToolCommandName>$(TargetName)</ToolCommandName>
-    <AssemblyVersion>2.11.22.2</AssemblyVersion>
-    <FileVersion>2.11.22.2</FileVersion>
-	<VersionPrefix>2.11.22.2</VersionPrefix>
+    <AssemblyVersion>2.11.29.2</AssemblyVersion>
+    <FileVersion>2.11.29.2</FileVersion>
+	<VersionPrefix>2.11.29.2</VersionPrefix>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>

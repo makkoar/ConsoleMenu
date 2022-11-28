@@ -5,6 +5,9 @@
         string Title { get; set; }
         List<(byte Index, string Text)> MenuItems { get; set; } = new();
 
+        public Theme MainTheme { get; set; } = Data.BlackTheme;
+        public Theme SideTheme { get; set; } = Data.GreenTheme;
+
         public Menu(string Title, params string[] MenuItems)
         {
             byte MenuIndex = 0;
@@ -18,15 +21,15 @@
             while (true)
             {
                 Console.Clear();
-                SetColor(ConsoleColor.Black, ConsoleColor.White);
+                MainTheme.Apply();
                 string Title = this.Title;
                 for (int i = 0; i < Texts.Length; i++) Title = Title.Replace($"{{{i}}}", $"{Texts[i]}");
                 Console.WriteLine(Title);
                 foreach ((byte Index, string Text) Item in MenuItems)
                 {
-                    if (Item.Index == MenuIndex) SetColor(ConsoleColor.Green, ConsoleColor.Black);
+                    if (Item.Index == MenuIndex) SideTheme.Apply();
                     Console.WriteLine($"* {Item.Text}".PadRight(64));
-                    SetColor(ConsoleColor.Black, ConsoleColor.White);
+                    MainTheme.Apply();
                 }
                 switch (Console.ReadKey().Key)
                 {
@@ -36,12 +39,6 @@
                     case ConsoleKey.Escape: Process.GetCurrentProcess().Kill(); break;
                 }
             }
-        }
-
-        public static void SetColor(ConsoleColor BackgroundColor, ConsoleColor TextColor)
-        {
-            Console.BackgroundColor = BackgroundColor;
-            Console.ForegroundColor = TextColor;
         }
     }
 }
