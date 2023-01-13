@@ -20,5 +20,8 @@
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<LangVersion>latest</LangVersion>
+		<PackageOutputPath>..\bin</PackageOutputPath>
+		<RootNamespace>ConsoleMenu</RootNamespace>
+		<BaseOutputPath>..\bin\</BaseOutputPath>
   </PropertyGroup>
 </Project>

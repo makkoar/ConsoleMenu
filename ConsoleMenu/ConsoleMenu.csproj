@@ -19,5 +19,7 @@
 		<VersionPrefix>3.1.13.4</VersionPrefix>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageOutputPath>..\bin</PackageOutputPath>
+		<BaseOutputPath>..\bin\</BaseOutputPath>
 	</PropertyGroup>
 </Project>
