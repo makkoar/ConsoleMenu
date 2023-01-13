@@ -5,11 +5,11 @@ VisualStudioVersion = 17.5.33209.295
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleMenu", "ConsoleMenu\ConsoleMenu.csproj", "{2A224EA6-BB93-47E9-B742-929361AA5177}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleMenu.Net6", "..\ConsoleMenu.Net6\ConsoleMenu.Net6.csproj", "{BC60025A-E61E-44FC-9E6F-8525F7182F74}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleMenu.Net6", "ConsoleMenu.Net6\ConsoleMenu.Net6.csproj", "{BC60025A-E61E-44FC-9E6F-8525F7182F74}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleMenu.Net5", "..\ConsoleMenu.Net5\ConsoleMenu.Net5.csproj", "{53D1B22B-E340-44A4-8503-B60452A0BBA2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleMenu.Net5", "ConsoleMenu.Net5\ConsoleMenu.Net5.csproj", "{53D1B22B-E340-44A4-8503-B60452A0BBA2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleMenu.NetStandart2.1", "..\ConsoleMenu.NetStandart2.1\ConsoleMenu.NetStandart2.1.csproj", "{4F041CA3-41D4-4AC3-8A0F-EEB2C6FA0A43}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleMenu.NetStandart2.1", "ConsoleMenu.NetStandart2.1\ConsoleMenu.NetStandart2.1.csproj", "{4F041CA3-41D4-4AC3-8A0F-EEB2C6FA0A43}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
