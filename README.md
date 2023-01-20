@@ -28,7 +28,7 @@ public static Menu MainMenu = new("{0} {1}:", "Пункт 1", "Пункт 2");
 ```
 при
 ```
-_ = MainMenu.GetIndex("Главное", "меню");
+_ = MainMenu.GetIndex("Главное {0}", "меню");
 ``` 
 выведет
 ```
