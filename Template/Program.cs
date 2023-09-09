@@ -15,7 +15,7 @@ public class Program
         Console.OutputEncoding = Encoding.UTF8;
         Console.CursorVisible = false;
 
-        Menu MainMenu = new Menu("Выберите элемент меню:", new(Test("Метка 1")) { Text = "Метка 1" }, new("Метка 2", Test("Метка 2")), new("Метка 3", Test("Метка 3"))).AddMenuItem("Метка 4", Test("Метка 4")).AddMenuItem("Метка 5", Test("Метка 5"));
+        Menu MainMenu = new Menu("Выберите элемент меню:", new MenuItem(Test("Метка 1")) { Text = "Метка 1" }, new("Метка 2", Test("Метка 2")), new("Метка 3", Test("Метка 3"))).AddMenuItem("Метка 4", Test("Метка 4")).AddMenuItem("Метка 5", Test("Метка 5"));
     MainMenu:
         if (IsNewMenu)
         {

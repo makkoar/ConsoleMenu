@@ -6,12 +6,14 @@ public class MenuItem
     /// <summary>Текст, который будет отображён на экране.</summary>
     public string Text { get; set; } = string.Empty;
     /// <summary>Функция, которая будет запушена, при выборе элемента меню.</summary>
-    public Action Function { get; set; }
+    public Action? Function { get; set; }
     #endregion
 
     #region Конструкторы
-    public MenuItem(Action function) => Function = function;
-    public MenuItem(string text, Action function) : this(function) => Text = text;
+    public MenuItem() { }
+    public MenuItem(string text) : this() => Text = text;
+    public MenuItem(Action? function) : this() => Function = function;
+    public MenuItem(string text, Action? function) : this(function) => Text = text;
     #endregion
 
     #region Builder pattern

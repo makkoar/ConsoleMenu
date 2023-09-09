@@ -19,6 +19,12 @@ public class Menu
             MenuItems.Add(menuItems[i]);
     }
     public Menu(string title, params MenuItem[] menuItems) : this(menuItems) => Title = title;
+    public Menu(params string[] menuItems) : this()
+    {
+        for (ushort i = 0; i < menuItems.Length; i++)
+            MenuItems.Add(new(menuItems[i], null));
+    }
+    public Menu(string title, params string[] menuItems) : this(menuItems) => Title = title;
     #endregion
 
     #region Функции активации меню
@@ -86,7 +92,7 @@ public class Menu
     /// <param name="text">Текст, который будет отображаться у добавляемого элемента меню.</param>
     /// <param name="function">Функция, которая будет запушена, при выборе элемента меню.</param>
     /// <returns>Меню с добавленым элементом меню.</returns>
-    public Menu AddMenuItem(string text, Action function)
+    public Menu AddMenuItem(string text, Action? function = null)
     {
         MenuItems.Add(new(text, function));
         return this;
