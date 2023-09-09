@@ -1,14 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net7.0</TargetFramework>
+		<TargetFramework>netstandard2.1</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<PackageId>SkyRez.$(AssemblyName)</PackageId>
 		<Title>Console menu (Консольное меню)</Title>
 		<Authors>makkoar</Authors>
 		<Company>SkyRez</Company>
-		<Description>Library for creating a simple button menu in the console.
-Библиотека для создания простого кнопочного меню в консоли.
+		<Description>
+			Library for creating a simple button menu in the console.
+			Библиотека для создания простого кнопочного меню в консоли.
 		</Description>
 		<RepositoryUrl>https://github.com/makkoar/ConsoleMenu</RepositoryUrl>
 		<PackageTags>Консоль, Console, Menu, Меню</PackageTags>
@@ -19,7 +20,9 @@
 		<VersionPrefix>3.1.20.11</VersionPrefix>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<LangVersion>latest</LangVersion>
 		<PackageOutputPath>..\bin</PackageOutputPath>
+		<RootNamespace>ConsoleMenu</RootNamespace>
 		<BaseOutputPath>..\bin\</BaseOutputPath>
 	</PropertyGroup>
 </Project>
