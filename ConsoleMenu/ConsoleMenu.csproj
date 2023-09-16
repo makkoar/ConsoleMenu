@@ -12,17 +12,31 @@
 			Библиотека для создания простого кнопочного меню в консоли.
 		</Description>
 		<RepositoryUrl>https://github.com/makkoar/ConsoleMenu</RepositoryUrl>
-		<PackageTags>Консоль, Console, Menu, Меню</PackageTags>
-		<PackAsTool>False</PackAsTool>
+		<PackageTags>Консоль, Console, Menu, Меню, Simple, Простое</PackageTags>
 		<ToolCommandName>$(TargetName)</ToolCommandName>
-		<AssemblyVersion>3.9.10.3</AssemblyVersion>
-		<FileVersion>3.9.10.3</FileVersion>
-		<VersionPrefix>3.9.10.3</VersionPrefix>
+		<AssemblyVersion>3.9.16.19</AssemblyVersion>
+		<FileVersion>3.9.16.19</FileVersion>
+		<VersionPrefix>3.9.16.19</VersionPrefix>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<LangVersion>latest</LangVersion>
 		<PackageOutputPath>..\bin\</PackageOutputPath>
 		<RootNamespace>ConsoleMenu</RootNamespace>
 		<BaseOutputPath>..\bin\</BaseOutputPath>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryType>git</RepositoryType>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<DocumentationFile>..\bin\$(AssemblyName).xml</DocumentationFile>
 	</PropertyGroup>
+	<ItemGroup>
+		<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\bin\$(AssemblyName).xml">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
 </Project>
