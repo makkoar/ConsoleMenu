@@ -44,9 +44,7 @@ public class InputMenu()
     /// <summary>Отображает меню, обрабатывает ввод пользователя и обновляет значения в <see cref="MenuItems"/>.</summary>
     public void Apply()
     {
-        if (!MenuItems.Any()) return;
-
-        var initialValues = MenuItems.Select(item => item.InputValue).ToList();
+        List<string?> initialValues = [.. MenuItems.Select(item => item.InputValue)];
 
         Console.CursorVisible = true;
         Console.Clear();
@@ -142,23 +140,48 @@ public class InputMenu()
     }
     #endregion
 
-    #region Строитель
-
-    /// <summary>Добавляет готовый элемент меню в данное меню.</summary>
-    /// <param name="item">Экземпляр <see cref="InputMenuItem"/>.</param>
-    /// <returns>Меню с добавленным элементом.</returns>
-    public InputMenu AddMenuItem(InputMenuItem item)
-    {
-        MenuItems.Add(item);
-        return this;
-    }
-
-    /// <summary>Добавляет элемент меню в данное меню.</summary>
+    #region Строитель (Fluent API)
+    /// <summary>Добавляет новый элемент в меню ввода.</summary>
     /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
     /// <param name="defaultValue">Начальное значение поля ввода.</param>
-    /// <returns>Меню с добавленным элементом.</returns>
-    public InputMenu AddMenuItem(string text, string? defaultValue = "") =>
-        AddMenuItem(new(text, defaultValue));
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Меню с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, string? defaultValue = "", string? id = null)
+    {
+        var newItem = new InputMenuItem(text, defaultValue, id);
+        return AddMenuItem(newItem);
+    }
+
+    /// <summary>Добавляет готовый элемент меню, проверяя уникальность его ID.</summary>
+    /// <param name="item">Экземпляр <see cref="InputMenuItem"/> для добавления.</param>
+    /// <returns>Меню с добавленным элементом для дальнейшей настройки.</returns>
+    /// <exception cref="ArgumentException">Выбрасывается, если элемент с таким ID уже существует в меню.</exception>
+    public InputMenu AddMenuItem(InputMenuItem item)
+    {
+        if (string.IsNullOrEmpty(item.Id))
+        {
+            item.Id = nextDefaultId.ToString();
+        }
+
+        if (!usedIds.Add(item.Id))
+        {
+            throw new ArgumentException($"Элемент с ID '{item.Id}' уже существует в этом меню.", nameof(item));
+        }
+
+        MenuItems.Add(item);
+
+        // Если пользователь вручную задал числовой ID, убедимся, что наш авто-инкремент его не перезапишет.
+        if (int.TryParse(item.Id, out int numericId))
+        {
+            nextDefaultId = Math.Max(nextDefaultId, numericId + 1);
+        }
+        else if (item.Id == (nextDefaultId - 1 > 0 ? nextDefaultId - 1 : 0).ToString())
+        {
+            nextDefaultId++;
+        }
+
+        return this;
+    }
 
     /// <summary>Заменяет заголовок меню на новый.</summary>
     /// <param name="newTitle">Новый заголовок меню.</param>
