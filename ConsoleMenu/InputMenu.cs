@@ -3,8 +3,16 @@
 /// <summary>Класс, отвечающий за консольное меню для ввода данных пользователем.</summary>
 public class InputMenu()
 {
+    #region Приватные поля
+    /// <summary>Хранит использованные ID для обеспечения уникальности.</summary>
+    private readonly HashSet<string> usedIds = [];
+
+    /// <summary>Счётчик для генерации уникальных ID по умолчанию.</summary>
+    private int nextDefaultId = 0;
+    #endregion
+
     #region Поля и свойства
-    /// <summary>Темы, которые будут применены к данному меню.</summary>
+    /// <summary>Тема, которая будет применена к данному меню.</summary>
     public Themes Theme { get; set; } = new();
 
     /// <summary>Заголовок меню.</summary>
