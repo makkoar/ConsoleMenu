@@ -47,15 +47,6 @@ public class InputMenu()
     #endregion
 
     #region Строитель
-    /// <summary>Добавляет элемент меню в данное меню.</summary>
-    /// <param name="text">Текст, который будет отображаться у добавляемого элемента меню.</param>
-    /// <param name="function">Функция, которая будет запушена, при выборе элемента меню.</param>
-    /// <returns>Меню с добавленным элементом меню.</returns>
-    public SelectMenu AddMenuItem(string text, string? defaultValue = null)
-    {
-        MenuItems.Add(new(text, defaultValue));
-        return this;
-    }
 
     /// <summary>Добавляет готовый элемент меню в данное меню.</summary>
     /// <param name="item">Экземпляр <see cref="InputMenuItem"/>.</param>
