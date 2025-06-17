@@ -21,8 +21,8 @@ public class Menu()
     public Menu(string title, params MenuItem[] menuItems) : this(menuItems) => Title = title;
     public Menu(params string[] menuItems) : this()
     {
-        for (ushort i = 0; i < menuItems.Length; i++)
-            MenuItems.Add(new(menuItems[i], null));
+        foreach (string item in menuItems)
+            MenuItems.Add(new(item));
     }
     public Menu(string title, params string[] menuItems) : this(menuItems) => Title = title;
     #endregion
@@ -78,7 +78,8 @@ public class Menu()
                 case ConsoleKey.Enter:
                     {
                         Console.Clear();
-                        MenuItems[selected].Function();
+                        if (MenuItems[selected].Function is not null)
+                            MenuItems[selected].Function!();
                     }
                     return;
                 case ConsoleKey.Escape: Process.GetCurrentProcess().Kill(); break;

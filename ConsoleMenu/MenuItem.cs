@@ -1,6 +1,6 @@
 ﻿namespace ConsoleMenu;
 /// <summary>Класс, отвечающий за элементы меню.</summary>
-public class MenuItem
+public class MenuItem()
 {
     #region Поля
     /// <summary>Текст, который будет отображён на экране.</summary>
@@ -10,13 +10,12 @@ public class MenuItem
     #endregion
 
     #region Конструкторы
-    public MenuItem() { }
     public MenuItem(string text) : this() => Text = text;
     public MenuItem(Action? function) : this() => Function = function;
     public MenuItem(string text, Action? function) : this(function) => Text = text;
     #endregion
 
-    #region Builder pattern
+    #region Строитель
     /// <summary>Заменяет текст элемента меню на новый.</summary>
     /// <param name="text">Новый текст элемента меню.</param>
     /// <returns>Элемент меню с изменённым текстом.</returns>
