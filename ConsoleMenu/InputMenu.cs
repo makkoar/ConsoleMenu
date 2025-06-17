@@ -3,12 +3,14 @@
 /// <summary>Класс, отвечающий за консольное меню для ввода данных пользователем.</summary>
 public class InputMenu()
 {
-    #region Поля
+    #region Поля и свойства
     /// <summary>Темы, которые будут применены к данному меню.</summary>
-    public Themes Themes { get; set; } = new();
+    public Themes Theme { get; set; } = new();
+
     /// <summary>Заголовок меню.</summary>
     public string Title { get; set; } = "Введите значение:";
-    /// <summary>Элементы меню ввода.</summary>
+
+    /// <summary>Элементы меню для ввода.</summary>
     public List<InputMenuItem> MenuItems { get; set; } = [];
     #endregion
 
