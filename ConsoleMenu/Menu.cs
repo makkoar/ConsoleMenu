@@ -16,19 +16,23 @@ public class Menu()
     /// <param name="title">Заголовок меню.</param>
     public Menu(string title) : this()
         => Title = title;
+
     /// <summary>Инициализирует новый экземпляр класса <see cref="Menu"/> с заданным списком элементов.</summary>
     /// <param name="menuItems">Список элементов меню <see cref="MenuItem"/>.</param>
     public Menu(params List<MenuItem> menuItems)
         : this() => menuItems.ForEach(MenuItems.Add);
+
     /// <summary>Инициализирует новый экземпляр класса <see cref="Menu"/> с указанным заголовком и списком элементов.</summary>
     /// <param name="title">Заголовок меню.</param>
     /// <param name="menuItems">Список элементов меню <see cref="MenuItem"/>.</param>
     public Menu(string title, params List<MenuItem> menuItems)
         : this(menuItems) => Title = title;
+
     /// <summary>Инициализирует новый экземпляр класса <see cref="Menu"/> из списка строк, где каждая строка становится элементом меню.</summary>
     /// <param name="menuItems">Список строк для создания элементов меню.</param>
     public Menu(params List<string> menuItems)
         : this() => menuItems.ForEach(item => MenuItems.Add(new(item)));
+
     /// <summary>Инициализирует новый экземпляр класса <see cref="Menu"/> с указанным заголовком и списком строк, где каждая строка становится элементом меню.</summary>
     /// <param name="title">Заголовок меню.</param>
     /// <param name="menuItems">Список строк для создания элементов меню.</param>
