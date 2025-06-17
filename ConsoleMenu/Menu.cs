@@ -91,7 +91,7 @@ public class Menu()
     /// <summary>Добавляет элемент меню в данное меню.</summary>
     /// <param name="text">Текст, который будет отображаться у добавляемого элемента меню.</param>
     /// <param name="function">Функция, которая будет запушена, при выборе элемента меню.</param>
-    /// <returns>Меню с добавленым элементом меню.</returns>
+    /// <returns>Меню с добавленным элементом меню.</returns>
     public Menu AddMenuItem(string text, Action? function = null)
     {
         MenuItems.Add(new(text, function));
