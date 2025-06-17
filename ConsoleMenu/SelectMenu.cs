@@ -92,7 +92,7 @@ public class SelectMenu()
                 case ConsoleKey.Enter:
                     {
                         Console.Clear();
-                        if (MenuItems[selected].Function is not null)
+                        if (MenuItems.Count > 0 && MenuItems[selected].Function is not null)
                             MenuItems[selected].Function!();
                     }
                     return;
