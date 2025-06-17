@@ -5,7 +5,7 @@ public class SelectMenu()
 {
     #region Поля
     /// <summary>Темы, которые будут применены к данному меню.</summary>
-    public Themes Themes { get; set; } = new();
+    public Themes Theme { get; set; } = new();
     /// <summary>Заголовок меню.</summary>
     public string Title { get; set; } = "Выберите пункт меню:";
     /// <summary>Элементы меню.</summary>
@@ -51,13 +51,13 @@ public class SelectMenu()
         while (true)
         {
             Console.Clear();
-            Themes.Title.Apply();
+            Theme.Title.Apply();
             Console.WriteLine(Title.PadRight(64));
             for (ushort i = 0; i < MenuItems.Count; i++)
             {
-                if (i == selected) Themes.Selected.Apply();
+                if (i == selected) Theme.Selected.Apply();
                 Console.WriteLine($"* {MenuItems[i].Text}".PadRight(64));
-                Themes.Unselected.Apply();
+                Theme.Unselected.Apply();
             }
             switch (Console.ReadKey().Key)
             {
@@ -77,13 +77,13 @@ public class SelectMenu()
         while (true)
         {
             Console.Clear();
-            Themes.Title.Apply();
+            Theme.Title.Apply();
             Console.WriteLine(Title.PadRight(64));
             for (ushort i = 0; i < MenuItems.Count; i++)
             {
-                if (i == selected) Themes.Selected.Apply();
+                if (i == selected) Theme.Selected.Apply();
                 Console.WriteLine($"* {MenuItems[i].Text}".PadRight(64));
-                Themes.Unselected.Apply();
+                Theme.Unselected.Apply();
             }
             switch (Console.ReadKey().Key)
             {
@@ -127,9 +127,9 @@ public class SelectMenu()
     /// <returns>Меню с изменёнными темами.</returns>
     public SelectMenu SetThemes(Theme title, Theme selected, Theme unselected)
     {
-        Themes.Title = title;
-        Themes.Selected = selected;
-        Themes.Unselected = unselected;
+        Theme.Title = title;
+        Theme.Selected = selected;
+        Theme.Unselected = unselected;
         return this;
     }
     #endregion
