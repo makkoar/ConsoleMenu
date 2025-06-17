@@ -1,6 +1,7 @@
 ﻿namespace ConsoleMenu;
+
 /// <summary>Класс, отвечающий за элементы меню.</summary>
-public class MenuItem()
+public class SelectMenuItem()
 {
     #region Поля
     /// <summary>Текст, который будет отображён на экране.</summary>
@@ -10,25 +11,25 @@ public class MenuItem()
     #endregion
 
     #region Конструкторы
-    /// <summary>Инициализирует новый экземпляр класса <see cref="MenuItem"/> с указанным текстом.</summary>
+    /// <summary>Инициализирует новый экземпляр класса <see cref="SelectMenuItem"/> с указанным текстом.</summary>
     /// <param name="text">Текст элемента меню.</param>
-    public MenuItem(string text) : this() => Text = text;
+    public SelectMenuItem(string text) : this() => Text = text;
 
-    /// <summary>Инициализирует новый экземпляр класса <see cref="MenuItem"/> с указанной функцией.</summary>
+    /// <summary>Инициализирует новый экземпляр класса <see cref="SelectMenuItem"/> с указанной функцией.</summary>
     /// <param name="function">Функция, которая будет выполнена при выборе этого элемента меню.</param>
-    public MenuItem(Action? function) : this() => Function = function;
+    public SelectMenuItem(Action? function) : this() => Function = function;
 
-    /// <summary>Инициализирует новый экземпляр класса <see cref="MenuItem"/> с указанным текстом и функцией.</summary>
+    /// <summary>Инициализирует новый экземпляр класса <see cref="SelectMenuItem"/> с указанным текстом и функцией.</summary>
     /// <param name="text">Текст элемента меню.</param>
     /// <param name="function">Функция, которая будет выполнена при выборе этого элемента меню.</param>
-    public MenuItem(string text, Action? function) : this(function) => Text = text;
+    public SelectMenuItem(string text, Action? function) : this(function) => Text = text;
     #endregion
 
     #region Строитель
     /// <summary>Заменяет текст элемента меню на новый.</summary>
     /// <param name="text">Новый текст элемента меню.</param>
     /// <returns>Элемент меню с изменённым текстом.</returns>
-    public MenuItem SetText(string text)
+    public SelectMenuItem SetText(string text)
     {
         Text = text;
         return this;
@@ -36,7 +37,7 @@ public class MenuItem()
     /// <summary>Заменяет функцию, которая будет запускаться при выборе этого элемента меню.</summary>
     /// <param name="function">Новая функция.</param>
     /// <returns>Элемент меню с изменённым текстом.</returns>
-    public MenuItem SetAction(Action function)
+    public SelectMenuItem SetAction(Action function)
     {
         Function = function;
         return this;
