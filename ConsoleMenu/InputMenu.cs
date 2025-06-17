@@ -20,16 +20,19 @@ public class InputMenu()
     public InputMenu(string title) : this()
         => Title = title;
 
-    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> с заданным списком элементов.</summary>
-    /// <param name="menuItems">Список элементов меню <see cref="InputMenuItem"/>.</param>
-    public InputMenu(params List<InputMenuItem> menuItems)
-        : this() => menuItems.ForEach(MenuItems.Add);
+    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> с заданным набором элементов.</summary>
+    /// <param name="menuItems">Набор элементов меню <see cref="InputMenuItem"/>.</param>
+    public InputMenu(params InputMenuItem[] menuItems) : this()
+        => MenuItems.AddRange(menuItems);
 
-    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> с указанным заголовком и списком элементов.</summary>
+    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> с указанным заголовком и набором элементов.</summary>
     /// <param name="title">Заголовок меню.</param>
-    /// <param name="menuItems">Список элементов меню <see cref="InputMenuItem"/>.</param>
-    public InputMenu(string title, params List<InputMenuItem> menuItems)
-        : this(menuItems) => Title = title;
+    /// <param name="menuItems">Набор элементов меню <see cref="InputMenuItem"/>.</param>
+    public InputMenu(string title, params InputMenuItem[] menuItems) : this(menuItems)
+        => Title = title;
+    #endregion
+
+    #region Основная логика
 
     /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> из списка строк, где каждая строка становится элементом меню.</summary>
     /// <param name="menuItems">Список строк для создания элементов меню.</param>
