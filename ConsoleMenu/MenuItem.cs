@@ -10,8 +10,17 @@ public class MenuItem()
     #endregion
 
     #region Конструкторы
+    /// <summary>Инициализирует новый экземпляр класса <see cref="MenuItem"/> с указанным текстом.</summary>
+    /// <param name="text">Текст элемента меню.</param>
     public MenuItem(string text) : this() => Text = text;
+
+    /// <summary>Инициализирует новый экземпляр класса <see cref="MenuItem"/> с указанной функцией.</summary>
+    /// <param name="function">Функция, которая будет выполнена при выборе этого элемента меню.</param>
     public MenuItem(Action? function) : this() => Function = function;
+
+    /// <summary>Инициализирует новый экземпляр класса <see cref="MenuItem"/> с указанным текстом и функцией.</summary>
+    /// <param name="text">Текст элемента меню.</param>
+    /// <param name="function">Функция, которая будет выполнена при выборе этого элемента меню.</param>
     public MenuItem(string text, Action? function) : this(function) => Text = text;
     #endregion
 
