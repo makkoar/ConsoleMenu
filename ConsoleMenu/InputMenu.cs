@@ -66,6 +66,13 @@ public class InputMenu()
         return this;
     }
 
+    /// <summary>Добавляет элемент меню в данное меню.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода.</param>
+    /// <returns>Меню с добавленным элементом.</returns>
+    public InputMenu AddMenuItem(string text, string? defaultValue = "") =>
+        AddMenuItem(new(text, defaultValue));
+
     /// <summary>Заменяет заголовок меню на новый.</summary>
     /// <param name="newTitle">Новый заголовок меню.</param>
     /// <returns>Меню с изменённым заголовком.</returns>
