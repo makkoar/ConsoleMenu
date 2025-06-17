@@ -1,6 +1,6 @@
 ﻿namespace ConsoleMenu;
 
-/// <summary>Класс, отвечающий за элементы меню.</summary>
+/// <summary>Класс, отвечающий за элементы меню выбора.</summary>
 public class SelectMenuItem()
 {
     #region Поля

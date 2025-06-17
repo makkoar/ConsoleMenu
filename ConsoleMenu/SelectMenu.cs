@@ -37,7 +37,8 @@ public class SelectMenu()
     /// <summary>Инициализирует новый экземпляр класса <see cref="SelectMenu"/> с указанным заголовком и списком строк, где каждая строка становится элементом меню.</summary>
     /// <param name="title">Заголовок меню.</param>
     /// <param name="menuItems">Список строк для создания элементов меню.</param>
-    public SelectMenu(string title, params List<string> menuItems) : this(menuItems) => Title = title;
+    public SelectMenu(string title, params List<string> menuItems)
+        : this(menuItems) => Title = title;
     #endregion
 
     #region Функции активации меню
