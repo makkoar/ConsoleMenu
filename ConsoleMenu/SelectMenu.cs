@@ -3,8 +3,8 @@
 /// <summary>Класс, отвечающий за консольное меню выбора.</summary>
 public class SelectMenu()
 {
-    #region Поля
-    /// <summary>Темы, которые будут применены к данному меню.</summary>
+    #region Поля и свойства
+    /// <summary>Тема, которая будет применена к данному меню.</summary>
     public Themes Theme { get; set; } = new();
     /// <summary>Заголовок меню.</summary>
     public string Title { get; set; } = "Выберите пункт меню:";
