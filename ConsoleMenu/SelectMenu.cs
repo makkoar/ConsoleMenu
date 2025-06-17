@@ -69,34 +69,59 @@ public class SelectMenu()
         }
     }
 
-    /// <summary>Применяет текущее меню.</summary>
-    /// <param name="startIndex">Начальное значение.</param>
-    public void Apply(ushort startIndex = 0)
+    /// <summary>Применяет текущее меню, отображая его и обрабатывая ввод пользователя.</summary>
+    /// <param name="startIndex">Индекс элемента, который будет выбран изначально.</param>
+    /// <param name="clear"><see langword="true"/>, чтобы очистить консоль перед отображением; <see langword="false"/>, чтобы отрисовать меню с текущей позиции курсора.</param>
+    public void Apply(ushort startIndex = 0, bool clear = true)
     {
+        if (clear) Console.Clear();
+
         ushort selected = startIndex;
+        int menuTop = Console.CursorTop;
+        int menuHeight = MenuItems.Count + 1; // +1 для заголовка
+        Console.CursorVisible = false;
+
         while (true)
         {
-            Console.Clear();
+            // --- 1. Перерисовка меню на исходной позиции ---
+            Console.SetCursorPosition(0, menuTop);
+
             Theme.Title.Apply();
             Console.WriteLine(Title.PadRight(64));
             for (ushort i = 0; i < MenuItems.Count; i++)
             {
                 if (i == selected) Theme.Selected.Apply();
+                else Theme.Unselected.Apply();
                 Console.WriteLine($"* {MenuItems[i].Text}".PadRight(64));
-                Theme.Unselected.Apply();
             }
-            switch (Console.ReadKey().Key)
+            Theme.Unselected.Apply(); // Сброс темы для последующего вывода в консоль
+
+            // --- 2. Обработка ввода ---
+            ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+            switch (keyInfo.Key)
             {
                 case ConsoleKey.UpArrow: selected = (ushort)(selected != 0 ? selected - 1 : MenuItems.Count - 1); break;
                 case ConsoleKey.DownArrow: selected = (ushort)(selected != MenuItems.Count - 1 ? selected + 1 : 0); break;
                 case ConsoleKey.Enter:
+                case ConsoleKey.Escape:
                     {
-                        Console.Clear();
-                        if (MenuItems.Count > 0 && MenuItems[selected].Function is not null)
+                        // --- 3. Очистка только области меню ---
+                        string cleaner = new(' ', Console.WindowWidth > 1 ? Console.WindowWidth - 1 : 65);
+                        for (int i = 0; i < menuHeight; i++)
+                        {
+                            Console.SetCursorPosition(0, menuTop + i);
+                            Console.Write(cleaner);
+                        }
+                        Console.SetCursorPosition(0, menuTop);
+                        Console.CursorVisible = true;
+
+                        // Выполняем действие только при нажатии Enter
+                        if (keyInfo.Key == ConsoleKey.Enter && MenuItems.Count > 0 && MenuItems[selected].Function is not null)
+                        {
                             MenuItems[selected].Function!();
+                        }
+                        return;
                     }
-                    return;
-                case ConsoleKey.Escape: Process.GetCurrentProcess().Kill(); break;
             }
         }
     }
