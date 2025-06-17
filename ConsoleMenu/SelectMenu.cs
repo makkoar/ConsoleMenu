@@ -117,9 +117,7 @@ public class SelectMenu()
 
                         // Выполняем действие только при нажатии Enter
                         if (keyInfo.Key == ConsoleKey.Enter && MenuItems.Count > 0 && MenuItems[selected].Function is not null)
-                        {
                             MenuItems[selected].Function!();
-                        }
                         return;
                     }
             }
