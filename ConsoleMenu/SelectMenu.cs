@@ -42,37 +42,11 @@ public class SelectMenu()
     #endregion
 
     #region Функции активации меню
-    /// <summary>Функция для получения выбранного элемента меню.</summary>
-    /// <param name="startIndex">Начальное значение.</param>
-    /// <returns>Выбранный элемента меню.</returns>
-    public ushort GetIndex(ushort startIndex = 0)
-    {
-        ushort selected = startIndex;
-        while (true)
-        {
-            Console.Clear();
-            Theme.Title.Apply();
-            Console.WriteLine(Title.PadRight(64));
-            for (ushort i = 0; i < MenuItems.Count; i++)
-            {
-                if (i == selected) Theme.Selected.Apply();
-                Console.WriteLine($"* {MenuItems[i].Text}".PadRight(64));
-                Theme.Unselected.Apply();
-            }
-            switch (Console.ReadKey().Key)
-            {
-                case ConsoleKey.UpArrow: selected = (ushort)(selected != 0 ? selected - 1 : MenuItems.Count - 1); break;
-                case ConsoleKey.DownArrow: selected = (ushort)(selected != MenuItems.Count - 1 ? selected + 1 : 0); break;
-                case ConsoleKey.Enter: Console.Clear(); return selected;
-                case ConsoleKey.Escape: Process.GetCurrentProcess().Kill(); break;
-            }
-        }
-    }
-
-    /// <summary>Применяет текущее меню, отображая его и обрабатывая ввод пользователя.</summary>
+       /// <summary>Применяет текущее меню, отображая его и обрабатывая ввод пользователя и возвращая индекс выбранного элемента.</summary>
     /// <param name="startIndex">Индекс элемента, который будет выбран изначально.</param>
     /// <param name="clear"><see langword="true"/>, чтобы очистить консоль перед отображением; <see langword="false"/>, чтобы отрисовать меню с текущей позиции курсора.</param>
-    public void Apply(ushort startIndex = 0, bool clear = true)
+    /// <returns>Индекс выбранного элемента меню.</returns>
+    public ushort Apply(ushort startIndex = 0, bool clear = true)
     {
         if (clear) Console.Clear();
 
@@ -115,10 +89,9 @@ public class SelectMenu()
                         Console.SetCursorPosition(0, menuTop);
                         Console.CursorVisible = true;
 
-                        // Выполняем действие только при нажатии Enter
                         if (keyInfo.Key is ConsoleKey.Enter && MenuItems.Count > 0 && MenuItems[selected].Function is not null)
                             MenuItems[selected].Function!();
-                        return;
+                        return selected;
                     }
             }
         }
