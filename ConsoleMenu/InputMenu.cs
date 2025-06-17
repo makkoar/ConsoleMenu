@@ -28,15 +28,15 @@ public class InputMenu()
     public InputMenu(string title) : this()
         => Title = title;
 
-    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> с заданным набором элементов.</summary>
+    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> с заданным набором элементов, проверяя их ID на уникальность.</summary>
     /// <param name="menuItems">Набор элементов меню <see cref="InputMenuItem"/>.</param>
-    public InputMenu(params InputMenuItem[] menuItems) : this()
-        => MenuItems.AddRange(menuItems);
+    public InputMenu(params List<InputMenuItem> menuItems) : this() =>
+        menuItems.ForEach(item => AddMenuItem(item));
 
-    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> с указанным заголовком и набором элементов.</summary>
+    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> с указанным заголовком и набором элементов, проверяя их ID на уникальность.</summary>
     /// <param name="title">Заголовок меню.</param>
     /// <param name="menuItems">Набор элементов меню <see cref="InputMenuItem"/>.</param>
-    public InputMenu(string title, params InputMenuItem[] menuItems) : this(menuItems)
+    public InputMenu(string title, params List<InputMenuItem> menuItems) : this(menuItems)
         => Title = title;
     #endregion
 
