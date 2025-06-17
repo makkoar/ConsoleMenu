@@ -28,12 +28,17 @@ public class InputMenu()
     public InputMenu(string title) : this()
         => Title = title;
 
-    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> с заданным набором элементов.</summary>
+    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> с заданным набором элементов, проверяя их ID на уникальность.</summary>
     /// <param name="menuItems">Набор элементов меню <see cref="InputMenuItem"/>.</param>
     public InputMenu(params InputMenuItem[] menuItems) : this()
-        => MenuItems.AddRange(menuItems);
+    {
+        foreach (var item in menuItems)
+        {
+            AddMenuItem(item);
+        }
+    }
 
-    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> с указанным заголовком и набором элементов.</summary>
+    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> с указанным заголовком и набором элементов, проверяя их ID на уникальность.</summary>
     /// <param name="title">Заголовок меню.</param>
     /// <param name="menuItems">Набор элементов меню <see cref="InputMenuItem"/>.</param>
     public InputMenu(string title, params InputMenuItem[] menuItems) : this(menuItems)
@@ -41,36 +46,149 @@ public class InputMenu()
     #endregion
 
     #region Основная логика
-
-    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> из списка строк, где каждая строка становится элементом меню.</summary>
-    /// <param name="menuItems">Список строк для создания элементов меню.</param>
-    public InputMenu(params List<string> menuItems)
-        : this() => menuItems.ForEach(item => MenuItems.Add(new(item)));
-
-    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> с указанным заголовком и списком строк, где каждая строка становится элементом меню.</summary>
-    /// <param name="title">Заголовок меню.</param>
-    /// <param name="menuItems">Список строк для создания элементов меню.</param>
-    public InputMenu(string title, params List<string> menuItems) 
-        : this(menuItems) => Title = title;
-    #endregion
-
-    #region Строитель
-
-    /// <summary>Добавляет готовый элемент меню в данное меню.</summary>
-    /// <param name="item">Экземпляр <see cref="InputMenuItem"/>.</param>
-    /// <returns>Меню с добавленным элементом.</returns>
-    public InputMenu AddMenuItem(InputMenuItem item)
+    /// <summary>Отображает меню, обрабатывает ввод пользователя и обновляет значения в <see cref="MenuItems"/>.</summary>
+    public void Apply()
     {
-        MenuItems.Add(item);
-        return this;
+        if (!MenuItems.Any()) return;
+
+        var initialValues = MenuItems.Select(item => item.InputValue).ToList();
+
+        Console.CursorVisible = true;
+        Console.Clear();
+
+        Theme.Title.Apply();
+        Console.WriteLine(Title);
+        Console.WriteLine();
+
+        // --- 1. Первичная отрисовка всего меню ---
+        Theme.Unselected.Apply();
+        for (int i = 0; i < MenuItems.Count; i++)
+        {
+            Console.WriteLine($"{MenuItems[i].Text}: {MenuItems[i].InputValue}");
+        }
+
+        int originalTop = Console.CursorTop;
+
+        // --- 2. Цикл по каждому полю для ввода ---
+        for (int i = 0; i < MenuItems.Count; i++)
+        {
+            var currentItem = MenuItems[i];
+            var prompt = $"{currentItem.Text}: ";
+            var inputBuilder = new StringBuilder(currentItem.InputValue ?? "");
+
+            int inputLeft = prompt.Length;
+            // +2: одна строка для заголовка, одна для пустой строки после него
+            int inputTop = i + 2;
+
+            // --- 2.1. Активируем текущее поле (подсветка) ---
+            Console.SetCursorPosition(inputLeft, inputTop);
+            Theme.Selected.Apply();
+            Console.Write(inputBuilder.ToString());
+
+            while (true)
+            {
+                Console.SetCursorPosition(inputLeft + inputBuilder.Length, inputTop);
+                ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+
+                switch (keyInfo.Key)
+                {
+                    case ConsoleKey.Enter:
+                        currentItem.InputValue = inputBuilder.ToString();
+                        Console.SetCursorPosition(inputLeft, inputTop);
+                        Theme.Unselected.Apply();
+                        Console.Write(currentItem.InputValue);
+                        goto next_item;
+
+                    case ConsoleKey.Escape:
+                        for (int j = 0; j < MenuItems.Count; j++)
+                        {
+                            MenuItems[j].InputValue = initialValues[j];
+                        }
+                        Console.CursorVisible = false;
+                        Theme.Unselected.Apply();
+                        Console.SetCursorPosition(0, originalTop);
+                        Console.Clear();
+                        return;
+
+                    case ConsoleKey.Backspace:
+                        if (inputBuilder.Length > 0)
+                        {
+                            inputBuilder.Remove(inputBuilder.Length - 1, 1);
+                            Console.SetCursorPosition(inputLeft + inputBuilder.Length, inputTop);
+                            Console.Write(" ");
+                            Console.SetCursorPosition(inputLeft + inputBuilder.Length, inputTop);
+                        }
+                        break;
+
+                    default:
+                        if (!char.IsControl(keyInfo.KeyChar))
+                        {
+                            inputBuilder.Append(keyInfo.KeyChar);
+                            Theme.Selected.Apply();
+                            Console.Write(keyInfo.KeyChar);
+                        }
+                        break;
+                }
+            }
+        next_item:;
+        }
+
+        Console.CursorVisible = false;
+        Theme.Unselected.Apply();
+        Console.SetCursorPosition(0, originalTop);
+        Console.Clear();
     }
 
-    /// <summary>Добавляет элемент меню в данное меню.</summary>
+    /// <summary>Возвращает текущие значения всех элементов меню в виде словаря.</summary>
+    /// <returns>Словарь, где ключ — это <see cref="InputMenuItem.Id"/>, а значение — это <see cref="InputMenuItem.InputValue"/>.</returns>
+    public Dictionary<string, string?> GetInputs()
+    {
+        return MenuItems.ToDictionary(item => item.Id, item => item.InputValue);
+    }
+    #endregion
+
+    #region Строитель (Fluent API)
+    /// <summary>Добавляет новый элемент в меню ввода.</summary>
     /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
     /// <param name="defaultValue">Начальное значение поля ввода.</param>
-    /// <returns>Меню с добавленным элементом.</returns>
-    public InputMenu AddMenuItem(string text, string? defaultValue = "") =>
-        AddMenuItem(new(text, defaultValue));
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Меню с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, string? defaultValue = "", string? id = null)
+    {
+        var newItem = new InputMenuItem(text, defaultValue, id);
+        return AddMenuItem(newItem);
+    }
+
+    /// <summary>Добавляет готовый элемент меню, проверяя уникальность его ID.</summary>
+    /// <param name="item">Экземпляр <see cref="InputMenuItem"/> для добавления.</param>
+    /// <returns>Меню с добавленным элементом для дальнейшей настройки.</returns>
+    /// <exception cref="ArgumentException">Выбрасывается, если элемент с таким ID уже существует в меню.</exception>
+    public InputMenu AddMenuItem(InputMenuItem item)
+    {
+        if (string.IsNullOrEmpty(item.Id))
+        {
+            item.Id = nextDefaultId.ToString();
+        }
+
+        if (!usedIds.Add(item.Id))
+        {
+            throw new ArgumentException($"Элемент с ID '{item.Id}' уже существует в этом меню.", nameof(item));
+        }
+
+        MenuItems.Add(item);
+
+        // Если пользователь вручную задал числовой ID, убедимся, что наш авто-инкремент его не перезапишет.
+        if (int.TryParse(item.Id, out int numericId))
+        {
+            nextDefaultId = Math.Max(nextDefaultId, numericId + 1);
+        }
+        else if (item.Id == (nextDefaultId - 1 > 0 ? nextDefaultId - 1 : 0).ToString())
+        {
+            nextDefaultId++;
+        }
+
+        return this;
+    }
 
     /// <summary>Заменяет заголовок меню на новый.</summary>
     /// <param name="newTitle">Новый заголовок меню.</param>
