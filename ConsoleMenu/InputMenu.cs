@@ -56,6 +56,16 @@ public class InputMenu()
         MenuItems.Add(new(text, defaultValue));
         return this;
     }
+
+    /// <summary>Добавляет готовый элемент меню в данное меню.</summary>
+    /// <param name="item">Экземпляр <see cref="InputMenuItem"/>.</param>
+    /// <returns>Меню с добавленным элементом.</returns>
+    public InputMenu AddMenuItem(InputMenuItem item)
+    {
+        MenuItems.Add(item);
+        return this;
+    }
+
     /// <summary>Заменяет заголовок меню на новый.</summary>
     /// <param name="newTitle">Новый заголовок меню.</param>
     /// <returns>Меню с изменённым заголовком.</returns>
