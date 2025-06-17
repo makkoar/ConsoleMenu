@@ -1,4 +1,5 @@
 ﻿namespace ConsoleMenu;
+
 /// <summary>Класс, описывающий темы.</summary>
 public class Theme
 {

@@ -1,18 +1,18 @@
 ﻿namespace ConsoleMenu;
 /// <summary>Класс, отвечающий за консольное меню.</summary>
-public class Menu
+public class Menu()
 {
     #region Поля
     /// <summary>Темы, которые будут применены к данному меню.</summary>
     public Themes Themes { get; set; } = new();
     /// <summary>Заголовок меню.</summary>
-    public string Title { get; set; } = "Выбирите пункт меню:";
+    public string Title { get; set; } = "Выберите пункт меню:";
     /// <summary>Элементы меню.</summary>
-    public List<MenuItem> MenuItems { get; set; } = new();
+    public List<MenuItem> MenuItems { get; set; } = [];
     #endregion
 
     #region Конструкторы
-    public Menu() { }
+    public Menu(string title) : this() => Title = title;
     public Menu(params MenuItem[] menuItems) : this()
     {
         for (ushort i = 0; i < menuItems.Length; i++)
