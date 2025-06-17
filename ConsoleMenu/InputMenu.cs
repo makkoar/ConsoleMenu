@@ -57,23 +57,24 @@ public class InputMenu()
         return this;
     }
     /// <summary>Заменяет заголовок меню на новый.</summary>
-    /// <param name="title">Новый заголовок меню.</param>
+    /// <param name="newTitle">Новый заголовок меню.</param>
     /// <returns>Меню с изменённым заголовком.</returns>
-    public SelectMenu SetTitle(string title)
+    public InputMenu SetTitle(string newTitle)
     {
-        Title = title;
+        Title = newTitle;
         return this;
     }
+
     /// <summary>Устанавливает темы для данного меню.</summary>
     /// <param name="title">Тема заголовка меню.</param>
-    /// <param name="selected">Тема выбранного элемента меню.</param>
-    /// <param name="unselected">Тема невыбранных элементов меню.</param>
+    /// <param name="selected">Тема редактируемого поля ввода.</param>
+    /// <param name="unselected">Тема остальных элементов.</param>
     /// <returns>Меню с изменёнными темами.</returns>
-    public SelectMenu SetThemes(Theme title, Theme selected, Theme unselected)
+    public InputMenu SetThemes(Theme title, Theme selected, Theme unselected)
     {
-        Themes.Title = title;
-        Themes.Selected = selected;
-        Themes.Unselected = unselected;
+        Theme.Title = title;
+        Theme.Selected = selected;
+        Theme.Unselected = unselected;
         return this;
     }
     #endregion
