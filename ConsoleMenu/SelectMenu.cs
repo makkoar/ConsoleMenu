@@ -116,7 +116,7 @@ public class SelectMenu()
                         Console.CursorVisible = true;
 
                         // Выполняем действие только при нажатии Enter
-                        if (keyInfo.Key == ConsoleKey.Enter && MenuItems.Count > 0 && MenuItems[selected].Function is not null)
+                        if (keyInfo.Key is ConsoleKey.Enter && MenuItems.Count > 0 && MenuItems[selected].Function is not null)
                             MenuItems[selected].Function!();
                         return;
                     }
