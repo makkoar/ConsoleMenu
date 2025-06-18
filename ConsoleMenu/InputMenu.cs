@@ -46,7 +46,6 @@ public class InputMenu()
     public void Apply(bool clear = false)
     {
         List<string?> initialValues = [.. MenuItems.Select(item => item.InputValue)];
-
         int selected = 0;
         if (clear) Console.Clear();
 
@@ -59,31 +58,72 @@ public class InputMenu()
         Console.SetCursorPosition(0, menuTop);
         Console.WriteLine(Title);
 
+        // --- Локальная функция для очистки области меню ---
+        void ClearMenuArea()
+        {
+            int lineWidth = Console.WindowWidth > 1 ? Console.WindowWidth - 1 : 64;
+            string cleaner = new(' ', lineWidth);
+            for (int i = 0; i < MenuItems.Count + 1; i++)
+            {
+                Console.SetCursorPosition(0, menuTop + i);
+                Console.Write(cleaner);
+            }
+            Console.SetCursorPosition(0, menuTop);
+            Console.ResetColor();
+        }
+
+        // --- Локальная функция для отрисовки одной строки меню ---
+        void DrawMenuLine(int i, bool isSelected)
+        {
+            int lineWidth = Console.WindowWidth > 1 ? Console.WindowWidth - 1 : 64;
+            Console.SetCursorPosition(0, menuTop + 1 + i);
+
+            InputMenuItem item = MenuItems[i];
+            string value = item.InputValue ?? "";
+            string prompt = item.Text + ": ";
+            string line = prompt + value;
+
+            if (isSelected)
+            {
+                Console.BackgroundColor = Theme.SelectedBackgroundColor;
+                Console.ForegroundColor = Theme.SelectedTextColor;
+                if (line.Length < lineWidth)
+                    Console.Write(line.PadRight(lineWidth));
+                else
+                    Console.Write(line);
+            }
+            else
+            {
+                Console.BackgroundColor = Theme.UnselectedBackgroundColor;
+                // Текст-приглашение
+                Console.ForegroundColor = Theme.FieldTextColor;
+                if (prompt.Length < lineWidth)
+                    Console.Write(prompt);
+                else
+                    Console.Write(prompt.Substring(0, lineWidth));
+
+                // Вводимое значение
+                int left = Math.Min(prompt.Length, lineWidth);
+                Console.SetCursorPosition(left, menuTop + 1 + i);
+                Console.ForegroundColor = Theme.UnselectedTextColor;
+                int valueLen = Math.Min(value.Length, lineWidth - left);
+                if (valueLen > 0)
+                    Console.Write(value.Substring(0, valueLen));
+
+                // Дополнение пробелами до конца строки
+                int pad = lineWidth - Math.Min(line.Length, lineWidth);
+                if (pad > 0)
+                    Console.Write(new string(' ', pad));
+            }
+
+            Console.ResetColor();
+        }
+
         // --- 1. Перерисовка меню ---
         void Redraw()
         {
             for (int i = 0; i < MenuItems.Count; i++)
-            {
-                Console.SetCursorPosition(0, menuTop + 1 + i);
-                if (i == selected)
-                {
-                    Console.ForegroundColor = Theme.SelectedTextColor;
-                    Console.BackgroundColor = Theme.SelectedBackgroundColor;
-                }
-                else
-                {
-                    Console.ForegroundColor = Theme.UnselectedTextColor;
-                    Console.BackgroundColor = Theme.UnselectedBackgroundColor;
-                }
-
-                var value = MenuItems[i].InputValue ?? "";
-                // Очищаем строку перед выводом
-                Console.Write(new string(' ', Console.WindowWidth - 1));
-                Console.SetCursorPosition(0, menuTop + 1 + i);
-                Console.Write($"{MenuItems[i].Text}: {value}");
-            }
-            Console.ForegroundColor = Theme.UnselectedTextColor;
-            Console.BackgroundColor = Theme.UnselectedBackgroundColor;
+                DrawMenuLine(i, i == selected);
         }
 
         Redraw();
@@ -93,9 +133,9 @@ public class InputMenu()
 
         while (true)
         {
-            var currentItem = MenuItems[selected];
-            var prompt = $"{currentItem.Text}: ";
-            var inputBuilder = new StringBuilder(currentItem.InputValue ?? "");
+            InputMenuItem currentItem = MenuItems[selected];
+            string prompt = $"{currentItem.Text}: ";
+            StringBuilder inputBuilder = new StringBuilder(currentItem.InputValue ?? "");
             inputLeft = prompt.Length;
             inputTop = menuTop + 1 + selected;
 
@@ -121,30 +161,14 @@ public class InputMenu()
                 for (int j = 0; j < MenuItems.Count; j++)
                     MenuItems[j].InputValue = initialValues[j];
                 Console.CursorVisible = false;
-                // Очистка только области меню
-                string cleaner = new(' ', Console.WindowWidth - 1);
-                for (int i = 0; i < MenuItems.Count + 1; i++)
-                {
-                    Console.SetCursorPosition(0, menuTop + i);
-                    Console.Write(cleaner);
-                }
-                Console.SetCursorPosition(0, menuTop);
-                Console.ResetColor();
+                ClearMenuArea();
                 return;
             }
             if (keyInfo.Key == ConsoleKey.Enter)
             {
                 MenuItems[selected].InputValue = inputBuilder.ToString();
                 Console.CursorVisible = false;
-                // Очистка только области меню
-                string cleaner = new(' ', Console.WindowWidth - 1);
-                for (int i = 0; i < MenuItems.Count + 1; i++)
-                {
-                    Console.SetCursorPosition(0, menuTop + i);
-                    Console.Write(cleaner);
-                }
-                Console.SetCursorPosition(0, menuTop);
-                Console.ResetColor();
+                ClearMenuArea();
                 return;
             }
             if (keyInfo.Key == ConsoleKey.Backspace)
