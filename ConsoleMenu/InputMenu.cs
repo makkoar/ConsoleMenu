@@ -46,6 +46,7 @@ public class InputMenu()
     {
         List<string?> initialValues = [.. MenuItems.Select(item => item.InputValue)];
 
+        int selected = 0;
         Console.CursorVisible = true;
         Console.Clear();
 
@@ -54,82 +55,92 @@ public class InputMenu()
         Console.WriteLine();
 
         // --- 1. Первичная отрисовка всего меню ---
-        Theme.Unselected.Apply();
-        for (int i = 0; i < MenuItems.Count; i++)
+        void Redraw()
         {
-            Console.WriteLine($"{MenuItems[i].Text}: {MenuItems[i].InputValue}");
+            for (int i = 0; i < MenuItems.Count; i++)
+            {
+                Console.SetCursorPosition(0, i + 2);
+                if (i == selected)
+                    Theme.Selected.Apply();
+                else
+                    Theme.Unselected.Apply();
+
+                var value = MenuItems[i].InputValue ?? "";
+                // Очищаем строку перед выводом
+                Console.Write(new string(' ', Console.WindowWidth - 1));
+                Console.SetCursorPosition(0, i + 2);
+                Console.Write($"{MenuItems[i].Text}: {value}");
+            }
+            Theme.Unselected.Apply();
         }
 
-        int originalTop = Console.CursorTop;
+        Redraw();
 
-        // --- 2. Цикл по каждому полю для ввода ---
-        for (int i = 0; i < MenuItems.Count; i++)
+        int inputLeft = 0;
+        int inputTop = 0;
+
+        while (true)
         {
-            var currentItem = MenuItems[i];
+            var currentItem = MenuItems[selected];
             var prompt = $"{currentItem.Text}: ";
             var inputBuilder = new StringBuilder(currentItem.InputValue ?? "");
+            inputLeft = prompt.Length;
+            inputTop = selected + 2;
 
-            int inputLeft = prompt.Length;
-            // +2: одна строка для заголовка, одна для пустой строки после него
-            int inputTop = i + 2;
+            Console.SetCursorPosition(inputLeft + inputBuilder.Length, inputTop);
+            Console.CursorVisible = true;
 
-            // --- 2.1. Активируем текущее поле (подсветка) ---
-            Console.SetCursorPosition(inputLeft, inputTop);
-            Theme.Selected.Apply();
-            Console.Write(inputBuilder.ToString());
+            ConsoleKeyInfo keyInfo = Console.ReadKey(true);
 
-            while (true)
+            if (keyInfo.Key == ConsoleKey.UpArrow)
             {
-                Console.SetCursorPosition(inputLeft + inputBuilder.Length, inputTop);
-                ConsoleKeyInfo keyInfo = Console.ReadKey(true);
-
-                switch (keyInfo.Key)
-                {
-                    case ConsoleKey.Enter:
-                        currentItem.InputValue = inputBuilder.ToString();
-                        Console.SetCursorPosition(inputLeft, inputTop);
-                        Theme.Unselected.Apply();
-                        Console.Write(currentItem.InputValue);
-                        goto next_item;
-
-                    case ConsoleKey.Escape:
-                        for (int j = 0; j < MenuItems.Count; j++)
-                        {
-                            MenuItems[j].InputValue = initialValues[j];
-                        }
-                        Console.CursorVisible = false;
-                        Theme.Unselected.Apply();
-                        Console.SetCursorPosition(0, originalTop);
-                        Console.Clear();
-                        return;
-
-                    case ConsoleKey.Backspace:
-                        if (inputBuilder.Length > 0)
-                        {
-                            inputBuilder.Remove(inputBuilder.Length - 1, 1);
-                            Console.SetCursorPosition(inputLeft + inputBuilder.Length, inputTop);
-                            Console.Write(" ");
-                            Console.SetCursorPosition(inputLeft + inputBuilder.Length, inputTop);
-                        }
-                        break;
-
-                    default:
-                        if (!char.IsControl(keyInfo.KeyChar))
-                        {
-                            inputBuilder.Append(keyInfo.KeyChar);
-                            Theme.Selected.Apply();
-                            Console.Write(keyInfo.KeyChar);
-                        }
-                        break;
-                }
+                selected = (selected - 1 + MenuItems.Count) % MenuItems.Count;
+                Redraw();
+                continue;
             }
-        next_item:;
+            if (keyInfo.Key == ConsoleKey.DownArrow)
+            {
+                selected = (selected + 1) % MenuItems.Count;
+                Redraw();
+                continue;
+            }
+            if (keyInfo.Key == ConsoleKey.Escape)
+            {
+                for (int j = 0; j < MenuItems.Count; j++)
+                    MenuItems[j].InputValue = initialValues[j];
+                Console.CursorVisible = false;
+                Theme.Unselected.Apply();
+                Console.Clear();
+                return;
+            }
+            if (keyInfo.Key == ConsoleKey.Enter)
+            {
+                // Завершаем ввод и выходим
+                MenuItems[selected].InputValue = inputBuilder.ToString();
+                Console.CursorVisible = false;
+                Theme.Unselected.Apply();
+                Console.Clear();
+                return;
+            }
+            if (keyInfo.Key == ConsoleKey.Backspace)
+            {
+                if (inputBuilder.Length > 0)
+                {
+                    inputBuilder.Remove(inputBuilder.Length - 1, 1);
+                    MenuItems[selected].InputValue = inputBuilder.ToString();
+                    Redraw();
+                    Console.SetCursorPosition(inputLeft + inputBuilder.Length, inputTop);
+                }
+                continue;
+            }
+            if (!char.IsControl(keyInfo.KeyChar))
+            {
+                inputBuilder.Append(keyInfo.KeyChar);
+                MenuItems[selected].InputValue = inputBuilder.ToString();
+                Redraw();
+                Console.SetCursorPosition(inputLeft + inputBuilder.Length, inputTop);
+            }
         }
-
-        Console.CursorVisible = false;
-        Theme.Unselected.Apply();
-        Console.SetCursorPosition(0, originalTop);
-        Console.Clear();
     }
 
     /// <summary>Возвращает текущие значения всех элементов меню в виде словаря.</summary>
@@ -140,7 +151,7 @@ public class InputMenu()
     }
     #endregion
 
-    #region Строитель (Fluent API)
+    #region Строитель
     /// <summary>Добавляет новый элемент в меню ввода.</summary>
     /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
     /// <param name="defaultValue">Начальное значение поля ввода.</param>
@@ -159,9 +170,7 @@ public class InputMenu()
     public InputMenu AddMenuItem(InputMenuItem item)
     {
         if (string.IsNullOrEmpty(item.Id))
-        {
             item.Id = nextDefaultId.ToString();
-        }
 
         if (!usedIds.Add(item.Id))
         {
