@@ -42,7 +42,7 @@ public class SelectMenu()
     #endregion
 
     #region Функции активации меню
-       /// <summary>Применяет текущее меню, отображая его и обрабатывая ввод пользователя и возвращая индекс выбранного элемента.</summary>
+    /// <summary>Применяет текущее меню, отображая его и обрабатывая ввод пользователя и возвращая индекс выбранного элемента.</summary>
     /// <param name="startIndex">Индекс элемента, который будет выбран изначально.</param>
     /// <param name="clear"><see langword="true"/>, чтобы очистить консоль перед отображением; <see langword="false"/>, чтобы отрисовать меню с текущей позиции курсора.</param>
     /// <returns>Индекс выбранного элемента меню.</returns>
@@ -100,14 +100,20 @@ public class SelectMenu()
 
     #region Строитель
     /// <summary>Добавляет элемент меню в данное меню.</summary>
+    /// <param name="item">Экземпляр <see cref="InputMenuItem"/> для добавления.</param>
+    /// <returns>Меню с добавленным элементом меню.</returns>
+    public SelectMenu AddMenuItem(SelectMenuItem item)
+    {
+        MenuItems.Add(item);
+        return this;
+    }
+    /// <summary>Добавляет элемент меню в данное меню.</summary>
     /// <param name="text">Текст, который будет отображаться у добавляемого элемента меню.</param>
     /// <param name="function">Функция, которая будет запушена, при выборе элемента меню.</param>
     /// <returns>Меню с добавленным элементом меню.</returns>
     public SelectMenu AddMenuItem(string text, Action? function = null)
-    {
-        MenuItems.Add(new(text, function));
-        return this;
-    }
+        => AddMenuItem(new(text, function));
+    
     /// <summary>Заменяет заголовок меню на новый.</summary>
     /// <param name="title">Новый заголовок меню.</param>
     /// <returns>Меню с изменённым заголовком.</returns>
