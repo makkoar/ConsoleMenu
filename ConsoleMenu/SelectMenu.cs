@@ -5,7 +5,7 @@ public class SelectMenu()
 {
     #region Поля и свойства
     /// <summary>Тема, которая будет применена к данному меню.</summary>
-    public Themes Theme { get; set; } = new();
+    public Theme Theme { get; set; } = Themes.Presets[EThemes.Classic];
     /// <summary>Заголовок меню.</summary>
     public string Title { get; set; } = "Выберите пункт меню:";
     /// <summary>Элементы меню.</summary>
@@ -60,15 +60,24 @@ public class SelectMenu()
             // --- 1. Перерисовка меню на исходной позиции ---
             Console.SetCursorPosition(0, menuTop);
 
-            Theme.Title.Apply();
+            Console.ForegroundColor = Theme.TitleTextColor;
+            Console.BackgroundColor = Theme.TitleBackgroundColor;
             Console.WriteLine(Title.PadRight(64));
             for (ushort i = 0; i < MenuItems.Count; i++)
             {
-                if (i == selected) Theme.Selected.Apply();
-                else Theme.Unselected.Apply();
+                if (i == selected)
+                {
+                    Console.ForegroundColor = Theme.SelectedTextColor;
+                    Console.BackgroundColor = Theme.SelectedBackgroundColor;
+                }
+                else
+                {
+                    Console.ForegroundColor = Theme.UnselectedTextColor;
+                    Console.BackgroundColor = Theme.UnselectedBackgroundColor;
+                }
                 Console.WriteLine($"* {MenuItems[i].Text}".PadRight(64));
             }
-            Theme.Unselected.Apply(); // Сброс темы для последующего вывода в консоль
+            Console.ResetColor(); // Сброс темы для последующего вывода в консоль
 
             // --- 2. Обработка ввода ---
             ConsoleKeyInfo keyInfo = Console.ReadKey(true);
@@ -88,6 +97,7 @@ public class SelectMenu()
                         }
                         Console.SetCursorPosition(0, menuTop);
                         Console.CursorVisible = true;
+                        Console.ResetColor();
 
                         if (keyInfo.Key is ConsoleKey.Enter && MenuItems.Count > 0 && MenuItems[selected].Function is not null)
                             MenuItems[selected].Function!();
@@ -123,15 +133,27 @@ public class SelectMenu()
         return this;
     }
     /// <summary>Устанавливает темы для данного меню.</summary>
-    /// <param name="title">Тема заголовка меню.</param>
-    /// <param name="selected">Тема выбранного элемента меню.</param>
-    /// <param name="unselected">Тема невыбранных элементов меню.</param>
+    /// <param name="titleTextColor">Цвет текста заголовка меню.</param>
+    /// <param name="titleBackgroundColor">Цвет фона заголовка меню.</param>
+    /// <param name="selectedTextColor">Цвет текста выбранного элемента меню.</param>
+    /// <param name="selectedBackgroundColor">Цвет фона выбранного элемента меню.</param>
+    /// <param name="unselectedTextColor">Цвет текста невыбранных элементов меню.</param>
+    /// <param name="unselectedBackgroundColor">Цвет фона невыбранных элементов меню.</param>
     /// <returns>Меню с изменёнными темами.</returns>
-    public SelectMenu SetThemes(Theme title, Theme selected, Theme unselected)
+    public SelectMenu SetThemes(
+        ConsoleColor titleTextColor,
+        ConsoleColor titleBackgroundColor,
+        ConsoleColor selectedTextColor,
+        ConsoleColor selectedBackgroundColor,
+        ConsoleColor unselectedTextColor,
+        ConsoleColor unselectedBackgroundColor)
     {
-        Theme.Title = title;
-        Theme.Selected = selected;
-        Theme.Unselected = unselected;
+        Theme.TitleTextColor = titleTextColor;
+        Theme.TitleBackgroundColor = titleBackgroundColor;
+        Theme.SelectedTextColor = selectedTextColor;
+        Theme.SelectedBackgroundColor = selectedBackgroundColor;
+        Theme.UnselectedTextColor = unselectedTextColor;
+        Theme.UnselectedBackgroundColor = unselectedBackgroundColor;
         return this;
     }
     #endregion

@@ -13,7 +13,7 @@ public class InputMenu()
 
     #region Поля и свойства
     /// <summary>Тема, которая будет применена к данному меню.</summary>
-    public Themes Theme { get; set; } = new();
+    public Theme Theme { get; set; } = Themes.Presets[EThemes.Classic];
 
     /// <summary>Заголовок меню.</summary>
     public string Title { get; set; } = "Введите значение:";
@@ -54,7 +54,8 @@ public class InputMenu()
         Console.CursorVisible = true;
 
         // Отрисовка заголовка
-        Theme.Title.Apply();
+        Console.ForegroundColor = Theme.TitleTextColor;
+        Console.BackgroundColor = Theme.TitleBackgroundColor;
         Console.SetCursorPosition(0, menuTop);
         Console.WriteLine(Title);
 
@@ -65,9 +66,15 @@ public class InputMenu()
             {
                 Console.SetCursorPosition(0, menuTop + 1 + i);
                 if (i == selected)
-                    Theme.Selected.Apply();
+                {
+                    Console.ForegroundColor = Theme.SelectedTextColor;
+                    Console.BackgroundColor = Theme.SelectedBackgroundColor;
+                }
                 else
-                    Theme.Unselected.Apply();
+                {
+                    Console.ForegroundColor = Theme.UnselectedTextColor;
+                    Console.BackgroundColor = Theme.UnselectedBackgroundColor;
+                }
 
                 var value = MenuItems[i].InputValue ?? "";
                 // Очищаем строку перед выводом
@@ -75,7 +82,8 @@ public class InputMenu()
                 Console.SetCursorPosition(0, menuTop + 1 + i);
                 Console.Write($"{MenuItems[i].Text}: {value}");
             }
-            Theme.Unselected.Apply();
+            Console.ForegroundColor = Theme.UnselectedTextColor;
+            Console.BackgroundColor = Theme.UnselectedBackgroundColor;
         }
 
         Redraw();
@@ -113,7 +121,6 @@ public class InputMenu()
                 for (int j = 0; j < MenuItems.Count; j++)
                     MenuItems[j].InputValue = initialValues[j];
                 Console.CursorVisible = false;
-                Theme.Unselected.Apply();
                 // Очистка только области меню
                 string cleaner = new(' ', Console.WindowWidth - 1);
                 for (int i = 0; i < MenuItems.Count + 1; i++)
@@ -122,13 +129,13 @@ public class InputMenu()
                     Console.Write(cleaner);
                 }
                 Console.SetCursorPosition(0, menuTop);
+                Console.ResetColor();
                 return;
             }
             if (keyInfo.Key == ConsoleKey.Enter)
             {
                 MenuItems[selected].InputValue = inputBuilder.ToString();
                 Console.CursorVisible = false;
-                Theme.Unselected.Apply();
                 // Очистка только области меню
                 string cleaner = new(' ', Console.WindowWidth - 1);
                 for (int i = 0; i < MenuItems.Count + 1; i++)
@@ -137,6 +144,7 @@ public class InputMenu()
                     Console.Write(cleaner);
                 }
                 Console.SetCursorPosition(0, menuTop);
+                Console.ResetColor();
                 return;
             }
             if (keyInfo.Key == ConsoleKey.Backspace)
@@ -225,9 +233,12 @@ public class InputMenu()
     /// <returns>Меню с изменёнными темами.</returns>
     public InputMenu SetThemes(Theme title, Theme selected, Theme unselected)
     {
-        Theme.Title = title;
-        Theme.Selected = selected;
-        Theme.Unselected = unselected;
+        Theme.TitleTextColor = title.TitleTextColor;
+        Theme.TitleBackgroundColor = title.TitleBackgroundColor;
+        Theme.SelectedTextColor = selected.SelectedTextColor;
+        Theme.SelectedBackgroundColor = selected.SelectedBackgroundColor;
+        Theme.UnselectedTextColor = unselected.UnselectedTextColor;
+        Theme.UnselectedBackgroundColor = unselected.UnselectedBackgroundColor;
         return this;
     }
     #endregion
