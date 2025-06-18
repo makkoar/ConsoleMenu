@@ -3,7 +3,7 @@
 /// <summary>Класс, отвечающий за элементы меню выбора.</summary>
 public class SelectMenuItem()
 {
-    #region Поля
+    #region Поля и свойства
     /// <summary>Текст, который будет отображён на экране.</summary>
     public string Text { get; set; } = string.Empty;
     /// <summary>Функция, которая будет запушена, при выборе элемента меню.</summary>

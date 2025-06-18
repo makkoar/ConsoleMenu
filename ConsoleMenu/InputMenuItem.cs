@@ -3,7 +3,7 @@
 /// <summary>Класс, представляющий один элемент для ввода данных в консольном меню.</summary>
 public class InputMenuItem(string text, string? defaultValue = "", string? id = null)
 {
-    #region Свойства
+    #region Поля и свойства
     /// <summary>Уникальный идентификатор элемента меню.</summary>
     public string Id { get; internal set; } = id ?? string.Empty;
 

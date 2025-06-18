@@ -5,7 +5,7 @@ public class SelectMenu()
 {
     #region Поля и свойства
     /// <summary>Тема, которая будет применена к данному меню.</summary>
-    public Theme Theme { get; set; } = Themes.Presets[EThemes.Classic];
+    public Theme Theme { get; set; } = Themes.Classic;
     /// <summary>Заголовок меню.</summary>
     public string Title { get; set; } = "Выберите пункт меню:";
     /// <summary>Элементы меню.</summary>
@@ -15,33 +15,28 @@ public class SelectMenu()
     #region Конструкторы
     /// <summary>Инициализирует новый экземпляр класса <see cref="SelectMenu"/> с указанным заголовком.</summary>
     /// <param name="title">Заголовок меню.</param>
-    public SelectMenu(string title) : this()
-        => Title = title;
+    public SelectMenu(string title) : this() => Title = title;
 
     /// <summary>Инициализирует новый экземпляр класса <see cref="SelectMenu"/> с заданным списком элементов.</summary>
     /// <param name="menuItems">Список элементов меню <see cref="SelectMenuItem"/>.</param>
-    public SelectMenu(params List<SelectMenuItem> menuItems)
-        : this() => menuItems.ForEach(MenuItems.Add);
+    public SelectMenu(params List<SelectMenuItem> menuItems) : this() => menuItems.ForEach(MenuItems.Add);
 
     /// <summary>Инициализирует новый экземпляр класса <see cref="SelectMenu"/> с указанным заголовком и списком элементов.</summary>
     /// <param name="title">Заголовок меню.</param>
     /// <param name="menuItems">Список элементов меню <see cref="SelectMenuItem"/>.</param>
-    public SelectMenu(string title, params List<SelectMenuItem> menuItems)
-        : this(menuItems) => Title = title;
+    public SelectMenu(string title, params List<SelectMenuItem> menuItems) : this(menuItems) => Title = title;
 
     /// <summary>Инициализирует новый экземпляр класса <see cref="SelectMenu"/> из списка строк, где каждая строка становится элементом меню.</summary>
     /// <param name="menuItems">Список строк для создания элементов меню.</param>
-    public SelectMenu(params List<string> menuItems)
-        : this() => menuItems.ForEach(item => MenuItems.Add(new(item)));
+    public SelectMenu(params List<string> menuItems) : this() => menuItems.ForEach(item => MenuItems.Add(new(item)));
 
     /// <summary>Инициализирует новый экземпляр класса <see cref="SelectMenu"/> с указанным заголовком и списком строк, где каждая строка становится элементом меню.</summary>
     /// <param name="title">Заголовок меню.</param>
     /// <param name="menuItems">Список строк для создания элементов меню.</param>
-    public SelectMenu(string title, params List<string> menuItems)
-        : this(menuItems) => Title = title;
+    public SelectMenu(string title, params List<string> menuItems) : this(menuItems) => Title = title;
     #endregion
 
-    #region Функции активации меню
+    #region Основная логика
     /// <summary>Применяет текущее меню, отображая его и обрабатывая ввод пользователя и возвращая индекс выбранного элемента.</summary>
     /// <param name="startIndex">Индекс элемента, который будет выбран изначально.</param>
     /// <param name="clear"><see langword="true"/>, чтобы очистить консоль перед отображением; <see langword="false"/>, чтобы отрисовать меню с текущей позиции курсора.</param>

@@ -13,7 +13,7 @@ public class InputMenu()
 
     #region Поля и свойства
     /// <summary>Тема, которая будет применена к данному меню.</summary>
-    public Theme Theme { get; set; } = Themes.Presets[EThemes.Classic];
+    public Theme Theme { get; set; } = Themes.Classic;
 
     /// <summary>Заголовок меню.</summary>
     public string Title { get; set; } = "Введите значение:";
