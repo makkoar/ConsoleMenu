@@ -42,24 +42,28 @@ public class InputMenu()
 
     #region Основная логика
     /// <summary>Отображает меню, обрабатывает ввод пользователя и обновляет значения в <see cref="MenuItems"/>.</summary>
-    public void Apply()
+    /// <param name="clear">Указывает, нужно ли очищать консоль перед отображением меню.</param>
+    public void Apply(bool clear = false)
     {
         List<string?> initialValues = [.. MenuItems.Select(item => item.InputValue)];
 
         int selected = 0;
+        if (clear) Console.Clear();
+
+        int menuTop = Console.CursorTop;
         Console.CursorVisible = true;
-        Console.Clear();
 
+        // Отрисовка заголовка
         Theme.Title.Apply();
+        Console.SetCursorPosition(0, menuTop);
         Console.WriteLine(Title);
-        Console.WriteLine();
 
-        // --- 1. Первичная отрисовка всего меню ---
+        // --- 1. Перерисовка меню ---
         void Redraw()
         {
             for (int i = 0; i < MenuItems.Count; i++)
             {
-                Console.SetCursorPosition(0, i + 2);
+                Console.SetCursorPosition(0, menuTop + 1 + i);
                 if (i == selected)
                     Theme.Selected.Apply();
                 else
@@ -68,7 +72,7 @@ public class InputMenu()
                 var value = MenuItems[i].InputValue ?? "";
                 // Очищаем строку перед выводом
                 Console.Write(new string(' ', Console.WindowWidth - 1));
-                Console.SetCursorPosition(0, i + 2);
+                Console.SetCursorPosition(0, menuTop + 1 + i);
                 Console.Write($"{MenuItems[i].Text}: {value}");
             }
             Theme.Unselected.Apply();
@@ -85,7 +89,7 @@ public class InputMenu()
             var prompt = $"{currentItem.Text}: ";
             var inputBuilder = new StringBuilder(currentItem.InputValue ?? "");
             inputLeft = prompt.Length;
-            inputTop = selected + 2;
+            inputTop = menuTop + 1 + selected;
 
             Console.SetCursorPosition(inputLeft + inputBuilder.Length, inputTop);
             Console.CursorVisible = true;
@@ -110,16 +114,29 @@ public class InputMenu()
                     MenuItems[j].InputValue = initialValues[j];
                 Console.CursorVisible = false;
                 Theme.Unselected.Apply();
-                Console.Clear();
+                // Очистка только области меню
+                string cleaner = new(' ', Console.WindowWidth - 1);
+                for (int i = 0; i < MenuItems.Count + 1; i++)
+                {
+                    Console.SetCursorPosition(0, menuTop + i);
+                    Console.Write(cleaner);
+                }
+                Console.SetCursorPosition(0, menuTop);
                 return;
             }
             if (keyInfo.Key == ConsoleKey.Enter)
             {
-                // Завершаем ввод и выходим
                 MenuItems[selected].InputValue = inputBuilder.ToString();
                 Console.CursorVisible = false;
                 Theme.Unselected.Apply();
-                Console.Clear();
+                // Очистка только области меню
+                string cleaner = new(' ', Console.WindowWidth - 1);
+                for (int i = 0; i < MenuItems.Count + 1; i++)
+                {
+                    Console.SetCursorPosition(0, menuTop + i);
+                    Console.Write(cleaner);
+                }
+                Console.SetCursorPosition(0, menuTop);
                 return;
             }
             if (keyInfo.Key == ConsoleKey.Backspace)

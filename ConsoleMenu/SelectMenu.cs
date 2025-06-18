@@ -46,7 +46,7 @@ public class SelectMenu()
     /// <param name="startIndex">Индекс элемента, который будет выбран изначально.</param>
     /// <param name="clear"><see langword="true"/>, чтобы очистить консоль перед отображением; <see langword="false"/>, чтобы отрисовать меню с текущей позиции курсора.</param>
     /// <returns>Индекс выбранного элемента меню.</returns>
-    public ushort Apply(ushort startIndex = 0, bool clear = true)
+    public ushort Apply(ushort startIndex = 0, bool clear = false)
     {
         if (clear) Console.Clear();
 
