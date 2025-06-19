@@ -100,7 +100,7 @@ public class InputMenu()
                 if (prompt.Length < lineWidth)
                     Console.Write(prompt);
                 else
-                    Console.Write(prompt.Substring(0, lineWidth));
+                    Console.Write(prompt[..lineWidth]);
 
                 // Вводимое значение
                 int left = Math.Min(prompt.Length, lineWidth);
@@ -108,7 +108,7 @@ public class InputMenu()
                 Console.ForegroundColor = Theme.UnselectedTextColor;
                 int valueLen = Math.Min(value.Length, lineWidth - left);
                 if (valueLen > 0)
-                    Console.Write(value.Substring(0, valueLen));
+                    Console.Write(value[..valueLen]);
 
                 // Дополнение пробелами до конца строки
                 int pad = lineWidth - Math.Min(line.Length, lineWidth);
@@ -135,7 +135,7 @@ public class InputMenu()
         {
             InputMenuItem currentItem = MenuItems[selected];
             string prompt = $"{currentItem.Text}: ";
-            StringBuilder inputBuilder = new StringBuilder(currentItem.InputValue ?? "");
+            StringBuilder inputBuilder = new(currentItem.InputValue ?? string.Empty);
             inputLeft = prompt.Length;
             inputTop = menuTop + 1 + selected;
 
@@ -175,7 +175,7 @@ public class InputMenu()
             {
                 if (inputBuilder.Length > 0)
                 {
-                    inputBuilder.Remove(inputBuilder.Length - 1, 1);
+                    _ = inputBuilder.Remove(inputBuilder.Length - 1, 1);
                     MenuItems[selected].InputValue = inputBuilder.ToString();
                     Redraw();
                     Console.SetCursorPosition(inputLeft + inputBuilder.Length, inputTop);
@@ -184,7 +184,7 @@ public class InputMenu()
             }
             if (!char.IsControl(keyInfo.KeyChar))
             {
-                inputBuilder.Append(keyInfo.KeyChar);
+                _ = inputBuilder.Append(keyInfo.KeyChar);
                 MenuItems[selected].InputValue = inputBuilder.ToString();
                 Redraw();
                 Console.SetCursorPosition(inputLeft + inputBuilder.Length, inputTop);
