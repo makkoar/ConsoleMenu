@@ -88,6 +88,33 @@ public class InputMenu()
         return lines;
     }
 
+    /// <summary>Разбивает значение на строки для отображения, учитывая длину prompt в первой строке.</summary>
+    private static List<string> WrapInputValue(string value, int promptLen, int maxWidth)
+    {
+        List<string> lines = [];
+        int idx = 0;
+        int firstLineLen = maxWidth - promptLen;
+        // Первая строка
+        if (value.Length > firstLineLen)
+        {
+            lines.Add(value.Substring(0, firstLineLen));
+            idx += firstLineLen;
+        }
+        else
+        {
+            lines.Add(value);
+            return lines;
+        }
+        // Остальные строки
+        while (idx < value.Length)
+        {
+            int len = Math.Min(maxWidth, value.Length - idx);
+            lines.Add(value.Substring(idx, len));
+            idx += len;
+        }
+        return lines;
+    }
+
     /// <summary>Отображает меню, обрабатывает ввод пользователя по каждому полю и обновляет значения в <see cref="MenuItems"/>.<br/>Позволяет перемещаться между полями, редактировать значения, отменять ввод или подтверждать результат.</summary>
     /// <param name="clear">Если <c>true</c>, очищает консоль перед отображением меню; если <c>false</c>, меню рисуется с текущей позиции курсора.</param>
     /// <returns>Словарь, где ключ — <see cref="InputMenuItem.Id"/>, а значение — соответствующий элемент <see cref="InputMenuItem"/> с обновлённым вводом пользователя.</returns>
@@ -164,15 +191,21 @@ public class InputMenu()
                     Console.ForegroundColor = Theme.SelectedTextColor;
                     if (isLastPromptLine)
                     {
-                        string line = prompt + value;
-                        if (line.Length <= lineWidth)
-                            Console.Write(line.PadRight(lineWidth));
-                        else
+                        var valueLines = WrapInputValue(value, prompt.Length, lineWidth);
+                        for (int v = 0; v < valueLines.Count; v++)
                         {
-                            // Переносим значение на следующую строку, если не помещается
-                            Console.Write(prompt.PadRight(lineWidth));
-                            Console.SetCursorPosition(0, itemTop + lineIdx + 1);
-                            Console.Write(value.PadRight(lineWidth));
+                            int y = itemTop + lineIdx + v;
+                            Console.SetCursorPosition(0, y);
+                            if (v == 0)
+                            {
+                                // Сначала prompt, затем значение
+                                string line = prompt + valueLines[0];
+                                Console.Write(line.PadRight(lineWidth));
+                            }
+                            else
+                            {
+                                Console.Write(valueLines[v].PadRight(lineWidth));
+                            }
                         }
                     }
                     else Console.Write(prompt.PadRight(lineWidth));
@@ -183,17 +216,22 @@ public class InputMenu()
                     Console.ForegroundColor = Theme.FieldTextColor;
                     if (isLastPromptLine)
                     {
-                        Console.Write(prompt.Length < lineWidth ? prompt : prompt[..lineWidth]);
-                        int left = Math.Min(prompt.Length, lineWidth);
-                        Console.SetCursorPosition(left, itemTop + lineIdx);
-                        Console.ForegroundColor = Theme.UnselectedTextColor;
-                        int valueLen = Math.Min(value.Length, lineWidth - left);
-                        if (valueLen > 0)
-                            Console.Write(value[..valueLen]);
-
-                        int pad = lineWidth - Math.Min((prompt + value).Length, lineWidth);
-                        if (pad > 0)
-                            Console.Write(new string(' ', pad));
+                        var valueLines = WrapInputValue(value, prompt.Length, lineWidth);
+                        for (int v = 0; v < valueLines.Count; v++)
+                        {
+                            int y = itemTop + lineIdx + v;
+                            Console.SetCursorPosition(0, y);
+                            if (v == 0)
+                            {
+                                string line = prompt + valueLines[0];
+                                int promptLen = Math.Min(prompt.Length, lineWidth);
+                                Console.Write(line.PadRight(lineWidth));
+                            }
+                            else
+                            {
+                                Console.Write(valueLines[v].PadRight(lineWidth));
+                            }
+                        }
                     }
                     else Console.Write(prompt.PadRight(lineWidth));
                 }
@@ -325,7 +363,21 @@ public class InputMenu()
                     {
                         MenuItems[selected].InputValue = inputBuilder.ToString();
                         Redraw();
-                        Console.SetCursorPosition(inputLeft + cursorPos, inputTop);
+                        // --- Корректно вычисляем позицию курсора ---
+                        var valueLines = WrapInputValue(inputBuilder.ToString(), inputLeft, lineWidth);
+                        int line = 0, col = 0, chars = 0;
+                        for (int l = 0; l < valueLines.Count; l++)
+                        {
+                            int len = valueLines[l].Length;
+                            if (cursorPos <= chars + len)
+                            {
+                                line = l;
+                                col = cursorPos - chars;
+                                break;
+                            }
+                            chars += len;
+                        }
+                        Console.SetCursorPosition((line == 0 ? inputLeft : 0) + col, inputTop + line);
                         continue; // пропускаем остальную обработку, т.к. уже всё сделали
                     }
 
@@ -465,6 +517,12 @@ public class InputMenu()
 
                         if (!minusInserted)
                         {
+                            var valLines = WrapInputValue(inputBuilder.ToString().Insert(cursorPos, keyInfo.KeyChar.ToString()), inputLeft, lineWidth);
+                            if (valLines.Count + inputTop >= Console.BufferHeight)
+                                continue; // Не даём выйти за пределы буфера по высоте
+                            if (valLines.Any(l => l.Length > lineWidth))
+                                continue; // Не даём выйти за пределы по ширине
+
                             _ = inputBuilder.Insert(cursorPos, keyInfo.KeyChar);
                             cursorPos++;
                         }
@@ -658,8 +716,22 @@ public class InputMenu()
                         }
 
                         MenuItems[selected].InputValue = inputBuilder.ToString();
-                        Redraw();
-                        Console.SetCursorPosition(inputLeft + cursorPos, inputTop);
+
+                        // --- После изменения inputBuilder и cursorPos ---
+                        var valueLines = WrapInputValue(inputBuilder.ToString(), inputLeft, lineWidth);
+                        int line = 0, col = 0, chars = 0;
+                        for (int l = 0; l < valueLines.Count; l++)
+                        {
+                            int len = valueLines[l].Length;
+                            if (cursorPos <= chars + len)
+                            {
+                                line = l;
+                                col = cursorPos - chars;
+                                break;
+                            }
+                            chars += len;
+                        }
+                        Console.SetCursorPosition((line == 0 ? inputLeft : 0) + col, inputTop + line);
                     }
                 }
             }
