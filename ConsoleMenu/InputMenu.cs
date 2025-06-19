@@ -355,13 +355,7 @@ public class InputMenu()
                             int intPartLen = (dotIdx >= 0 ? dotIdx : text.Length);
 
                             // Ограничения для decimal: максимум 29 знаков (28 дробных + 1 целая, но реально 28-29 знаков)
-                            int maxDigits = currentItem.Type switch
-                            {
-                                EInputMenuItemType.Float => 8,   // float: 7 знаков точности
-                                EInputMenuItemType.Double => 16, // double: 15-16 знаков точности
-                                EInputMenuItemType.Decimal => 29, // decimal: 28-29 знаков
-                                _ => 29
-                            };
+                            int maxDigits = GetSignificantLimit(currentItem.Type);
 
                             // Проверяем длину целой части (без минуса)
                             intPartLen = text.StartsWith("-") ? intPartLen - 1 : intPartLen;
