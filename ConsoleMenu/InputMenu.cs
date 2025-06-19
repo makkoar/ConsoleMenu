@@ -276,21 +276,21 @@ public class InputMenu()
             {
                 ConsoleKeyInfo keyInfo = Console.ReadKey(true);
 
+                bool breakInnerLoop = false;
+
                 if (keyInfo.Key == ConsoleKey.UpArrow)
                 {
                     MenuItems[selected].InputValue = inputBuilder.ToString();
                     selected = (selected - 1 + MenuItems.Count) % MenuItems.Count;
-                    Redraw();
-                    break;
+                    breakInnerLoop = true;
                 }
-                if (keyInfo.Key == ConsoleKey.DownArrow)
+                else if (keyInfo.Key == ConsoleKey.DownArrow)
                 {
                     MenuItems[selected].InputValue = inputBuilder.ToString();
                     selected = (selected + 1) % MenuItems.Count;
-                    Redraw();
-                    break;
+                    breakInnerLoop = true;
                 }
-                if (keyInfo.Key == ConsoleKey.Escape)
+                else if (keyInfo.Key == ConsoleKey.Escape)
                 {
                     for (int j = 0; j < MenuItems.Count; j++)
                         MenuItems[j].InputValue = initialValues[j];
@@ -298,7 +298,7 @@ public class InputMenu()
                     ClearMenuArea();
                     return MenuItems.ToDictionary(item => item.Id, item => item);
                 }
-                if (keyInfo.Key == ConsoleKey.Enter)
+                else if (keyInfo.Key == ConsoleKey.Enter)
                 {
                     string input = inputBuilder.ToString();
                     MenuItems[selected].InputValue = input;
@@ -306,44 +306,34 @@ public class InputMenu()
                     ClearMenuArea();
                     return MenuItems.ToDictionary(item => item.Id, item => item);
                 }
-                if (keyInfo.Key == ConsoleKey.Backspace)
+                else if (keyInfo.Key == ConsoleKey.Backspace)
                 {
                     if (cursorPos > 0)
                     {
                         _ = inputBuilder.Remove(cursorPos - 1, 1);
                         cursorPos--;
                         MenuItems[selected].InputValue = inputBuilder.ToString();
-                        Redraw();
-                        Console.SetCursorPosition(inputLeft + cursorPos, inputTop);
                     }
-                    continue;
                 }
-                if (keyInfo.Key == ConsoleKey.Delete)
+                else if (keyInfo.Key == ConsoleKey.Delete)
                 {
                     if (cursorPos < inputBuilder.Length)
                     {
                         _ = inputBuilder.Remove(cursorPos, 1);
                         MenuItems[selected].InputValue = inputBuilder.ToString();
-                        Redraw();
-                        Console.SetCursorPosition(inputLeft + cursorPos, inputTop);
                     }
-                    continue;
                 }
-                if (keyInfo.Key == ConsoleKey.LeftArrow)
+                else if (keyInfo.Key == ConsoleKey.LeftArrow)
                 {
                     if (cursorPos > 0)
                         cursorPos--;
-                    Console.SetCursorPosition(inputLeft + cursorPos, inputTop);
-                    continue;
                 }
-                if (keyInfo.Key == ConsoleKey.RightArrow)
+                else if (keyInfo.Key == ConsoleKey.RightArrow)
                 {
                     if (cursorPos < inputBuilder.Length)
                         cursorPos++;
-                    Console.SetCursorPosition(inputLeft + cursorPos, inputTop);
-                    continue;
                 }
-                if (!char.IsControl(keyInfo.KeyChar))
+                else if (!char.IsControl(keyInfo.KeyChar))
                 {
                     // --- ДО switch (currentItem.Type) ---
                     // Особая обработка для минуса в начале строки для знаковых типов
@@ -734,6 +724,27 @@ public class InputMenu()
                         Console.SetCursorPosition((line == 0 ? inputLeft : 0) + col, inputTop + line);
                     }
                 }
+
+                Redraw();
+
+                // Корректно вычисляем позицию курсора для многострочного значения
+                var valueLinesFinal = WrapInputValue(inputBuilder.ToString(), inputLeft, lineWidth);
+                int lineFinal = 0, colFinal = 0, charsFinal = 0;
+                for (int l = 0; l < valueLinesFinal.Count; l++)
+                {
+                    int len = valueLinesFinal[l].Length;
+                    if (cursorPos <= charsFinal + len)
+                    {
+                        lineFinal = l;
+                        colFinal = cursorPos - charsFinal;
+                        break;
+                    }
+                    charsFinal += len;
+                }
+                Console.SetCursorPosition((lineFinal == 0 ? inputLeft : 0) + colFinal, inputTop + lineFinal);
+
+                if (breakInnerLoop)
+                    break;
             }
         }
     }
