@@ -1,49 +1,46 @@
 ﻿namespace ConsoleMenu;
 
-/// <summary>Класс, отвечающий за консольное меню для ввода данных пользователем.</summary>
+/// <summary>Класс, реализующий консольное меню для ввода данных пользователем по нескольким полям с поддержкой темизации, проверки уникальности идентификаторов и гибкой настройки элементов.<br/>Позволяет организовать пошаговый ввод значений с валидацией и возвратом результатов в виде словаря.</summary>
 public class InputMenu()
 {
     #region Приватные поля
-    /// <summary>Хранит использованные ID для обеспечения уникальности.</summary>
+    /// <summary>Хранит использованные ID для обеспечения уникальности среди элементов меню.<br/>Используется для предотвращения дублирования идентификаторов.</summary>
     private readonly HashSet<string> usedIds = [];
 
-    /// <summary>Счётчик для генерации уникальных ID по умолчанию.</summary>
+    /// <summary>Счётчик для генерации уникальных ID по умолчанию для новых элементов меню.<br/>Автоматически увеличивается при добавлении элементов без явного ID.</summary>
     private int nextDefaultId = 0;
     #endregion
 
     #region Поля и свойства
-    /// <summary>Тема, которая будет применена к данному меню.</summary>
+    /// <summary>Тема, применяемая к данному меню.<br/>Определяет цвета заголовка, выбранного и невыбранных полей, а также поля ввода.</summary>
     public Theme Theme { get; set; } = Themes.Classic;
 
-    /// <summary>Заголовок меню.</summary>
+    /// <summary>Заголовок меню, отображаемый над полями ввода.<br/>Может быть изменён через <see cref="SetTitle(string)"/>.</summary>
     public string Title { get; set; } = "Введите значение:";
 
-    /// <summary>Элементы меню для ввода.</summary>
+    /// <summary>Список элементов меню для ввода.<br/>Каждый элемент описывается объектом <see cref="InputMenuItem"/> и содержит текст-приглашение, значение по умолчанию, тип и уникальный идентификатор.</summary>
     public List<InputMenuItem> MenuItems { get; set; } = [];
     #endregion
 
     #region Конструкторы
-    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> с указанным заголовком.</summary>
-    /// <param name="title">Заголовок меню.</param>
-    public InputMenu(string title) : this()
-        => Title = title;
+    /// <summary>Создаёт новый экземпляр класса <see cref="InputMenu"/> с указанным заголовком.<br/>Меню будет содержать пустой список элементов.</summary>
+    /// <param name="title">Заголовок меню, который будет отображён над полями ввода.</param>
+    public InputMenu(string title) : this() => Title = title;
 
-    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> с заданным набором элементов, проверяя их ID на уникальность.</summary>
-    /// <param name="menuItems">Набор элементов меню <see cref="InputMenuItem"/>.</param>
-    public InputMenu(params List<InputMenuItem> menuItems) : this() =>
-        menuItems.ForEach(item => AddMenuItem(item));
+    /// <summary>Создаёт новый экземпляр класса <see cref="InputMenu"/> с заданным набором элементов.<br/>Проверяет уникальность их идентификаторов.</summary>
+    /// <param name="menuItems">Список элементов меню <see cref="InputMenuItem"/> для добавления в меню.</param>
+    public InputMenu(params List<InputMenuItem> menuItems) : this() => menuItems.ForEach(item => AddMenuItem(item));
 
-    /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenu"/> с указанным заголовком и набором элементов, проверяя их ID на уникальность.</summary>
+    /// <summary>Создаёт новый экземпляр класса <see cref="InputMenu"/> с указанным заголовком и набором элементов.<br/>Проверяет уникальность идентификаторов элементов.</summary>
     /// <param name="title">Заголовок меню.</param>
-    /// <param name="menuItems">Набор элементов меню <see cref="InputMenuItem"/>.</param>
-    public InputMenu(string title, params List<InputMenuItem> menuItems) : this(menuItems)
-        => Title = title;
+    /// <param name="menuItems">Список элементов меню <see cref="InputMenuItem"/> для добавления.</param>
+    public InputMenu(string title, params List<InputMenuItem> menuItems) : this(menuItems) => Title = title;
     #endregion
 
     #region Основная логика
-    /// <summary>Отображает меню, обрабатывает ввод пользователя и обновляет значения в <see cref="MenuItems"/>.</summary>
-    /// <param name="clear">Указывает, нужно ли очищать консоль перед отображением меню.</param>
-    /// <returns>Словарь, где ключ — это <see cref="InputMenuItem.Id"/>, а значение — сам элемент <see cref="InputMenuItem"/>.</returns>
+    /// <summary>Отображает меню, обрабатывает ввод пользователя по каждому полю и обновляет значения в <see cref="MenuItems"/>.<br/>Позволяет перемещаться между полями, редактировать значения, отменять ввод или подтверждать результат.</summary>
+    /// <param name="clear">Если <c>true</c>, очищает консоль перед отображением меню; если <c>false</c>, меню рисуется с текущей позиции курсора.</param>
+    /// <returns>Словарь, где ключ — <see cref="InputMenuItem.Id"/>, а значение — соответствующий элемент <see cref="InputMenuItem"/> с обновлённым вводом пользователя.</returns>
     public Dictionary<string, InputMenuItem> Apply(bool clear = false)
     {
         List<string?> initialValues = [.. MenuItems.Select(item => item.InputValue)];
@@ -271,7 +268,15 @@ public class InputMenu()
                                 allowInput = true;
                             else if ((keyInfo.KeyChar == '.' || keyInfo.KeyChar == ',') &&
                                      !inputBuilder.ToString().Contains('.') && !inputBuilder.ToString().Contains(','))
-                                allowInput = true;
+                            {
+                                // Блокируем ввод точки, если значащих цифр уже максимум
+                                string digitsOnly = inputBuilder.ToString().Replace("-", "").Replace(".", "").Replace(",", "");
+                                int maxSignificant = GetSignificantLimit(currentItem.Type);
+                                if (digitsOnly.Length < maxSignificant)
+                                    allowInput = true;
+                                else
+                                    allowInput = false;
+                            }
                             break;
                         default:
                             allowInput = true;
@@ -280,6 +285,85 @@ public class InputMenu()
 
                     if (allowInput)
                     {
+                        // --- Ограничение количества знаков после точки для дробных типов ---
+                        if (currentItem.Type is EInputMenuItemType.Float or EInputMenuItemType.Double or EInputMenuItemType.Decimal
+                            && char.IsDigit(keyInfo.KeyChar))
+                        {
+                            string text = inputBuilder.ToString();
+                            int dotIdx = text.IndexOfAny(['.', ',']);
+                            int intPartLen = (dotIdx >= 0 ? dotIdx : text.Length);
+
+                            // Ограничения для decimal: максимум 29 знаков (28 дробных + 1 целая, но реально 28-29 знаков)
+                            int maxDigits = currentItem.Type switch
+                            {
+                                EInputMenuItemType.Float => 8,   // float: 7 знаков точности
+                                EInputMenuItemType.Double => 16, // double: 15-16 знаков точности
+                                EInputMenuItemType.Decimal => 29, // decimal: 28-29 знаков
+                                _ => 29
+                            };
+
+                            // Проверяем длину целой части (без минуса)
+                            intPartLen = text.StartsWith("-") ? intPartLen - 1 : intPartLen;
+                            if (dotIdx == -1 && text.StartsWith("-"))
+                                intPartLen = text.Length - 1;
+
+                            if (intPartLen >= maxDigits && cursorPos <= intPartLen)
+                                continue; // Не даём ввести больше цифр в целой части
+
+                            int limit = GetFractionLimit(currentItem.Type);
+                            int fractionLen = text.Length - dotIdx - 1;
+                            // учесть вставку в конец или в середину дробной части
+                            if (cursorPos == text.Length)
+                                fractionLen++;
+                            else if (cursorPos > dotIdx)
+                                fractionLen = Math.Max(fractionLen, cursorPos - dotIdx);
+
+                            if (fractionLen > limit)
+                                continue;
+
+                            int maxSignificant = GetSignificantLimit(currentItem.Type);
+
+                            // Считаем количество значащих цифр (без минуса и точки)
+                            string digitsOnly = text.Replace("-", "").Replace(".", "").Replace(",", "");
+                            int significantCount = digitsOnly.Length;
+
+                            // Если курсор в целой части и значащих цифр уже максимум
+                            if ((dotIdx == -1 || cursorPos <= dotIdx) && significantCount >= maxSignificant)
+                            {
+                                // Если есть дробная часть — удаляем последнюю цифру дробной части
+                                if (dotIdx >= 0 && text.Length > dotIdx + 1)
+                                {
+                                    // Удаляем последнюю цифру дробной части
+                                    int lastDigitIdx = text.Length - 1;
+                                    while (lastDigitIdx > dotIdx && !char.IsDigit(text[lastDigitIdx]))
+                                        lastDigitIdx--;
+                                    if (lastDigitIdx > dotIdx)
+                                    {
+                                        inputBuilder.Remove(lastDigitIdx, 1);
+                                        if (cursorPos > lastDigitIdx) cursorPos--;
+                                    }
+
+                                    // Если после удаления дробной части осталась только точка — удаляем её
+                                    string newText = inputBuilder.ToString();
+                                    int newDotIdx = newText.IndexOfAny(['.', ',']);
+                                    if (newDotIdx >= 0 && newDotIdx == newText.Length - 1)
+                                    {
+                                        inputBuilder.Remove(newDotIdx, 1);
+                                        if (cursorPos > newDotIdx) cursorPos--;
+                                    }
+                                }
+                                else
+                                {
+                                    // Если дробной части нет — не даём ввести больше
+                                    continue;
+                                }
+                            }
+
+                            // Если значащих цифр уже максимум — не даём вводить новые цифры после точки
+                            if (dotIdx >= 0 && cursorPos > dotIdx && significantCount >= maxSignificant)
+                                continue;
+                        }
+
                         // Особая обработка для минуса в начале строки для знаковых типов
                         minusInserted = false;
                         if ((currentItem.Type is 
@@ -406,33 +490,91 @@ public class InputMenu()
                             case EInputMenuItemType.Double:
                             case EInputMenuItemType.Decimal:
                                 {
-                                    val = inputBuilder.ToString().Replace(',', '.');
+                                    val = inputBuilder.ToString();
+
+                                    // --- Сохраняем количество завершающих нулей и наличие точки ---
+                                    int trailingZeros = 0;
+                                    bool hasDot = false;
+                                    bool endsWithDot = false;
+                                    for (int i = val.Length - 1; i >= 0; i--)
+                                    {
+                                        if (val[i] == '0') trailingZeros++;
+                                        else break;
+                                    }
+                                    hasDot = val.Contains('.') || val.Contains(',');
+                                    endsWithDot = val.EndsWith(".") || val.EndsWith(",");
+
                                     isNegative = val.StartsWith("-");
                                     string rest = isNegative ? val[1..] : val;
-                                    // Трим ведущих нулей перед точкой
-                                    if (rest.StartsWith("0") && rest.Length > 1 && rest[1] != '.')
-                                        rest = rest.TrimStart('0');
-                                    if (rest == "" || rest.StartsWith(".")) rest = "0" + rest;
-                                    val = isNegative ? "-" + rest : rest;
+                                    rest = rest.Replace(',', '.');
 
-                                    // Проверка диапазона и нормализация
-                                    parsed = decimal.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal decVal);
-                                    decimal min = 0, max = 0;
-                                    switch (currentItem.Type)
+                                    // Удаляем все лишние точки, кроме первой
+                                    int dotIndex = rest.IndexOf('.');
+                                    if (dotIndex >= 0)
+                                        rest = rest[..(dotIndex + 1)] + rest[(dotIndex + 1)..].Replace(".", "");
+
+                                    // Не удаляем ведущий 0, если после него идёт точка (например, "0.0" или "0.")
+                                    if (rest.Length > 1 && rest.StartsWith("0") && rest[1] != '.')
                                     {
-                                        case EInputMenuItemType.Float:
-                                            min = Convert.ToDecimal(float.MinValue); max = Convert.ToDecimal(float.MaxValue); break;
-                                        case EInputMenuItemType.Double:
-                                            min = Convert.ToDecimal(double.MinValue); max = Convert.ToDecimal(double.MaxValue); break;
-                                        case EInputMenuItemType.Decimal:
-                                            min = decimal.MinValue; max = decimal.MaxValue; break;
+                                        int firstNonZero = 0;
+                                        while (firstNonZero < rest.Length && rest[firstNonZero] == '0') firstNonZero++;
+                                        rest = firstNonZero == rest.Length ? "0" : rest[firstNonZero..];
                                     }
-                                    if (parsed)
+                                    if (rest == "" || rest.StartsWith(".")) rest = "0" + rest;
+
+                                    // Если строка начинается с "0." (или "-0."), оставляем как есть
+                                    if (rest.StartsWith("0.") && isNegative)
+                                        val = "-" + rest;
+                                    else if (rest.StartsWith("0."))
+                                        val = rest;
+                                    else
+                                        val = isNegative ? "-" + rest : rest;
+
+                                    // --- Не парсим и не округляем, если пользователь явно вводит дробную часть ---
+                                    // (то есть если есть точка и после неё есть хотя бы одна цифра, или строка заканчивается на точку)
+                                    bool userTypingFraction = false;
+                                    int pointPos = val.IndexOf('.');
+                                    if (pointPos >= 0 && (pointPos < val.Length - 1 || endsWithDot))
+                                        userTypingFraction = true;
+
+                                    if (!userTypingFraction)
                                     {
-                                        if (decVal < min) decVal = min;
-                                        if (decVal > max) decVal = max;
-                                        val = decVal.ToString(CultureInfo.InvariantCulture);
+                                        parsed = false;
+                                        string format = "0.############################";
+                                        switch (currentItem.Type)
+                                        {
+                                            case EInputMenuItemType.Float:
+                                                parsed = float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float f);
+                                                if (parsed)
+                                                {
+                                                    if (float.IsPositiveInfinity(f))
+                                                        val = float.MaxValue.ToString(format, CultureInfo.InvariantCulture);
+                                                    else if (float.IsNegativeInfinity(f))
+                                                        val = float.MinValue.ToString(format, CultureInfo.InvariantCulture);
+                                                    else
+                                                        val = f.ToString(format, CultureInfo.InvariantCulture);
+                                                }
+                                                else
+                                                {
+                                                    val = isNegative ? float.MinValue.ToString(format, CultureInfo.InvariantCulture) : float.MaxValue.ToString(format, CultureInfo.InvariantCulture);
+                                                }
+                                                break;
+                                            case EInputMenuItemType.Double:
+                                                parsed = double.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out double d);
+                                                val = parsed
+                                                    ? d.ToString(format, CultureInfo.InvariantCulture)
+                                                    : (isNegative ? double.MinValue.ToString(format, CultureInfo.InvariantCulture) : double.MaxValue.ToString(format, CultureInfo.InvariantCulture));
+                                                break;
+                                            case EInputMenuItemType.Decimal:
+                                                parsed = decimal.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal m);
+                                                val = parsed
+                                                    ? m.ToString(format, CultureInfo.InvariantCulture)
+                                                    : (isNegative ? decimal.MinValue.ToString(format, CultureInfo.InvariantCulture) : decimal.MaxValue.ToString(format, CultureInfo.InvariantCulture));
+                                                break;
+                                        }
                                     }
+
+                                    // --- Не добавляем завершающие нули вручную, они уже есть в строке ---
 
                                     int oldCursorPos = cursorPos;
                                     oldLength = inputBuilder.Length;
@@ -456,13 +598,36 @@ public class InputMenu()
             }
         }
     }
+
+    /// <summary>Возвращает ограничение на количество дробных знаков для указанного типа поля.<br/>Используется для контроля точности при вводе числовых значений с плавающей точкой.</summary>
+    /// <param name="type">Тип вводимого значения (<see cref="EInputMenuItemType"/>).</param>
+    /// <returns>Максимально допустимое количество дробных знаков для данного типа.</returns>
+    private static int GetFractionLimit(EInputMenuItemType type) => type switch
+    {
+        EInputMenuItemType.Float => 7,
+        EInputMenuItemType.Double => 15,
+        EInputMenuItemType.Decimal => 28,
+        _ => int.MaxValue
+    };
+
+    /// <summary>Возвращает ограничение на количество значащих цифр для указанного типа поля.<br/>Используется для ограничения длины числового ввода.</summary>
+    /// <param name="type">Тип вводимого значения (<see cref="EInputMenuItemType"/>).</param>
+    /// <returns>Максимально допустимое количество значащих цифр для данного типа.</returns>
+    private static int GetSignificantLimit(EInputMenuItemType type) => type switch
+    {
+        EInputMenuItemType.Float => 7,
+        EInputMenuItemType.Double => 15,
+        EInputMenuItemType.Decimal => 29,
+        _ => int.MaxValue
+    };
     #endregion
 
     #region Строитель
-    /// <summary>Добавляет готовый элемент меню, проверяя уникальность его ID.</summary>
+    /// <summary>Добавляет готовый элемент меню, проверяя уникальность его идентификатора.<br/>Если идентификатор не указан, он будет сгенерирован автоматически.</summary>
     /// <param name="item">Экземпляр <see cref="InputMenuItem"/> для добавления.</param>
-    /// <returns>Меню с добавленным элементом для дальнейшей настройки.</returns>
-    /// <exception cref="ArgumentException">Выбрасывается, если элемент с таким ID уже существует в меню.</exception>
+    /// <param name="type">Тип вводимого значения для элемента меню. По умолчанию — <see cref="EInputMenuItemType.String"/>.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    /// <exception cref="ArgumentException">Выбрасывается, если элемент с таким идентификатором уже существует в меню.</exception>
     public InputMenu AddMenuItem(InputMenuItem item, EInputMenuItemType type = EInputMenuItemType.String)
     {
         if (string.IsNullOrEmpty(item.Id))
@@ -482,28 +647,28 @@ public class InputMenu()
         return this;
     }
 
-    /// <summary>Добавляет новый элемент в меню ввода.</summary>
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, идентификатор и тип поля.</summary>
     /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
-    /// <param name="defaultValue">Начальное значение поля ввода.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода. По умолчанию — пустая строка.</param>
     /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
-    /// <param name="type">Тип вводимого значения, определяемый перечислением <see cref="EInputMenuItemType"/>.</param>
-    /// <returns>Меню с добавленным элементом для дальнейшей настройки.</returns>
+    /// <param name="type">Тип вводимого значения (<see cref="EInputMenuItemType"/>). По умолчанию — строка.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
     public InputMenu AddMenuItem(string text, string? defaultValue = "", string? id = null, EInputMenuItemType type = EInputMenuItemType.String) => AddMenuItem(new InputMenuItem(text, defaultValue, id), type);
 
-    /// <summary>Заменяет заголовок меню на новый.</summary>
+    /// <summary>Заменяет заголовок меню на новый.<br/>Позволяет динамически изменять отображаемый заголовок.</summary>
     /// <param name="newTitle">Новый заголовок меню.</param>
-    /// <returns>Меню с изменённым заголовком.</returns>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с обновлённым заголовком.</returns>
     public InputMenu SetTitle(string newTitle)
     {
         Title = newTitle;
         return this;
     }
 
-    /// <summary>Устанавливает темы для данного меню.</summary>
-    /// <param name="title">Тема заголовка меню.</param>
-    /// <param name="selected">Тема редактируемого поля ввода.</param>
-    /// <param name="unselected">Тема остальных элементов.</param>
-    /// <returns>Меню с изменёнными темами.</returns>
+    /// <summary>Устанавливает темы для данного меню.<br/>Позволяет задать отдельные темы для заголовка, активного (редактируемого) поля и неактивных полей.</summary>
+    /// <param name="title">Тема для заголовка меню.</param>
+    /// <param name="selected">Тема для активного (выделенного) поля ввода.</param>
+    /// <param name="unselected">Тема для остальных (невыделенных) полей.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с обновлёнными темами.</returns>
     public InputMenu SetThemes(Theme title, Theme selected, Theme unselected)
     {
         Theme.TitleTextColor = title.TitleTextColor;

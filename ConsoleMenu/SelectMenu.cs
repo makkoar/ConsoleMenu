@@ -1,46 +1,46 @@
 ﻿namespace ConsoleMenu;
 
-/// <summary>Класс, отвечающий за консольное меню выбора.</summary>
+/// <summary>Класс, реализующий консольное меню выбора с поддержкой темизации, гибкой настройкой элементов и обработкой пользовательского ввода.<br/>Позволяет создавать интерактивные списки для выбора одного из вариантов с выполнением связанных действий.</summary>
 public class SelectMenu()
 {
     #region Поля и свойства
-    /// <summary>Тема, которая будет применена к данному меню.</summary>
+    /// <summary>Тема, применяемая к данному меню.<br/>Определяет цвета заголовка, выбранного и невыбранных пунктов.</summary>
     public Theme Theme { get; set; } = Themes.Classic;
-    /// <summary>Заголовок меню.</summary>
+    /// <summary>Заголовок меню, отображаемый над списком пунктов.<br/>Может быть изменён через <see cref="SetTitle(string)"/>.</summary>
     public string Title { get; set; } = "Выберите пункт меню:";
-    /// <summary>Элементы меню.</summary>
+    /// <summary>Список элементов меню.<br/>Каждый элемент описывается объектом <see cref="SelectMenuItem"/> и содержит текст и действие.</summary>
     public List<SelectMenuItem> MenuItems { get; set; } = [];
     #endregion
 
     #region Конструкторы
-    /// <summary>Инициализирует новый экземпляр класса <see cref="SelectMenu"/> с указанным заголовком.</summary>
-    /// <param name="title">Заголовок меню.</param>
+    /// <summary>Создаёт новый экземпляр класса <see cref="SelectMenu"/> с указанным заголовком.<br/>Меню будет содержать пустой список элементов.</summary>
+    /// <param name="title">Заголовок меню, который будет отображён над списком пунктов.</param>
     public SelectMenu(string title) : this() => Title = title;
 
-    /// <summary>Инициализирует новый экземпляр класса <see cref="SelectMenu"/> с заданным списком элементов.</summary>
-    /// <param name="menuItems">Список элементов меню <see cref="SelectMenuItem"/>.</param>
+    /// <summary>Создаёт новый экземпляр класса <see cref="SelectMenu"/> с заданным списком элементов.<br/>Каждый элемент добавляется в меню.</summary>
+    /// <param name="menuItems">Список элементов меню <see cref="SelectMenuItem"/> для добавления.</param>
     public SelectMenu(params List<SelectMenuItem> menuItems) : this() => menuItems.ForEach(MenuItems.Add);
 
-    /// <summary>Инициализирует новый экземпляр класса <see cref="SelectMenu"/> с указанным заголовком и списком элементов.</summary>
+    /// <summary>Создаёт новый экземпляр класса <see cref="SelectMenu"/> с указанным заголовком и списком элементов.<br/>Позволяет задать заголовок и сразу добавить пункты меню.</summary>
     /// <param name="title">Заголовок меню.</param>
-    /// <param name="menuItems">Список элементов меню <see cref="SelectMenuItem"/>.</param>
+    /// <param name="menuItems">Список элементов меню <see cref="SelectMenuItem"/> для добавления.</param>
     public SelectMenu(string title, params List<SelectMenuItem> menuItems) : this(menuItems) => Title = title;
 
-    /// <summary>Инициализирует новый экземпляр класса <see cref="SelectMenu"/> из списка строк, где каждая строка становится элементом меню.</summary>
+    /// <summary>Создаёт новый экземпляр класса <see cref="SelectMenu"/> из списка строк, где каждая строка становится отдельным пунктом меню.<br/>Действие для таких пунктов не задаётся.</summary>
     /// <param name="menuItems">Список строк для создания элементов меню.</param>
     public SelectMenu(params List<string> menuItems) : this() => menuItems.ForEach(item => MenuItems.Add(new(item)));
 
-    /// <summary>Инициализирует новый экземпляр класса <see cref="SelectMenu"/> с указанным заголовком и списком строк, где каждая строка становится элементом меню.</summary>
+    /// <summary>Создаёт новый экземпляр класса <see cref="SelectMenu"/> с указанным заголовком и списком строк, где каждая строка становится отдельным пунктом меню.<br/>Действие для таких пунктов не задаётся.</summary>
     /// <param name="title">Заголовок меню.</param>
     /// <param name="menuItems">Список строк для создания элементов меню.</param>
     public SelectMenu(string title, params List<string> menuItems) : this(menuItems) => Title = title;
     #endregion
 
     #region Основная логика
-    /// <summary>Применяет текущее меню, отображая его и обрабатывая ввод пользователя и возвращая индекс выбранного элемента.</summary>
-    /// <param name="startIndex">Индекс элемента, который будет выбран изначально.</param>
-    /// <param name="clear"><see langword="true"/>, чтобы очистить консоль перед отображением; <see langword="false"/>, чтобы отрисовать меню с текущей позиции курсора.</param>
-    /// <returns>Индекс выбранного элемента меню.</returns>
+    /// <summary>Отображает меню, позволяет пользователю выбрать пункт с помощью клавиш и возвращает индекс выбранного элемента.<br/>Если для выбранного пункта задано действие (<see cref="SelectMenuItem.Function"/>), оно будет выполнено при выборе.</summary>
+    /// <param name="startIndex">Индекс элемента, который будет выбран изначально. По умолчанию — 0.</param>
+    /// <param name="clear">Если <c>true</c>, очищает консоль перед отображением меню; если <c>false</c>, меню рисуется с текущей позиции курсора.</param>
+    /// <returns>Индекс выбранного элемента меню (<see cref="ushort"/>).</returns>
     public ushort Apply(ushort startIndex = 0, bool clear = false)
     {
         if (clear) Console.Clear();
@@ -104,44 +104,38 @@ public class SelectMenu()
     #endregion
 
     #region Строитель
-    /// <summary>Добавляет элемент меню в данное меню.</summary>
-    /// <param name="item">Экземпляр <see cref="InputMenuItem"/> для добавления.</param>
-    /// <returns>Меню с добавленным элементом меню.</returns>
+    /// <summary>Добавляет элемент меню в данное меню.<br/>Позволяет добавить готовый экземпляр <see cref="SelectMenuItem"/>.</summary>
+    /// <param name="item">Экземпляр <see cref="SelectMenuItem"/> для добавления.</param>
+    /// <returns>Текущий экземпляр <see cref="SelectMenu"/> с добавленным элементом.</returns>
     public SelectMenu AddMenuItem(SelectMenuItem item)
     {
         MenuItems.Add(item);
         return this;
     }
-    /// <summary>Добавляет элемент меню в данное меню.</summary>
+    /// <summary>Добавляет элемент меню в данное меню по тексту и действию.<br/>Создаёт новый <see cref="SelectMenuItem"/> с указанными параметрами.</summary>
     /// <param name="text">Текст, который будет отображаться у добавляемого элемента меню.</param>
-    /// <param name="function">Функция, которая будет запушена, при выборе элемента меню.</param>
-    /// <returns>Меню с добавленным элементом меню.</returns>
+    /// <param name="function">Функция, которая будет выполнена при выборе элемента меню. Необязательный параметр.</param>
+    /// <returns>Текущий экземпляр <see cref="SelectMenu"/> с добавленным элементом.</returns>
     public SelectMenu AddMenuItem(string text, Action? function = null)
         => AddMenuItem(new(text, function));
-    
-    /// <summary>Заменяет заголовок меню на новый.</summary>
+
+    /// <summary>Заменяет заголовок меню на новый.<br/>Позволяет динамически изменять отображаемый заголовок.</summary>
     /// <param name="title">Новый заголовок меню.</param>
-    /// <returns>Меню с изменённым заголовком.</returns>
+    /// <returns>Текущий экземпляр <see cref="SelectMenu"/> с обновлённым заголовком.</returns>
     public SelectMenu SetTitle(string title)
     {
         Title = title;
         return this;
     }
-    /// <summary>Устанавливает темы для данного меню.</summary>
+    /// <summary>Устанавливает темы для данного меню.<br/>Позволяет задать отдельные цвета для заголовка, выбранного и невыбранных пунктов.</summary>
     /// <param name="titleTextColor">Цвет текста заголовка меню.</param>
     /// <param name="titleBackgroundColor">Цвет фона заголовка меню.</param>
     /// <param name="selectedTextColor">Цвет текста выбранного элемента меню.</param>
     /// <param name="selectedBackgroundColor">Цвет фона выбранного элемента меню.</param>
     /// <param name="unselectedTextColor">Цвет текста невыбранных элементов меню.</param>
     /// <param name="unselectedBackgroundColor">Цвет фона невыбранных элементов меню.</param>
-    /// <returns>Меню с изменёнными темами.</returns>
-    public SelectMenu SetThemes(
-        ConsoleColor titleTextColor,
-        ConsoleColor titleBackgroundColor,
-        ConsoleColor selectedTextColor,
-        ConsoleColor selectedBackgroundColor,
-        ConsoleColor unselectedTextColor,
-        ConsoleColor unselectedBackgroundColor)
+    /// <returns>Текущий экземпляр <see cref="SelectMenu"/> с обновлёнными темами.</returns>
+    public SelectMenu SetThemes(ConsoleColor titleTextColor, ConsoleColor titleBackgroundColor, ConsoleColor selectedTextColor, ConsoleColor selectedBackgroundColor, ConsoleColor unselectedTextColor, ConsoleColor unselectedBackgroundColor)
     {
         Theme.TitleTextColor = titleTextColor;
         Theme.TitleBackgroundColor = titleBackgroundColor;
