@@ -48,44 +48,39 @@ public class InputMenu()
     private static List<string> WrapText(string text, int maxWidth)
     {
         List<string> lines = [];
-        string[] words = text.Split(' ');
+        string[] words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         StringBuilder currentLine = new();
 
         foreach (string word in words)
         {
-            int wordPos = 0;
-            while (wordPos < word.Length)
+            // Если слово не помещается в текущую строку
+            if (currentLine.Length > 0)
             {
-                int remaining = maxWidth - (currentLine.Length > 0 ? currentLine.Length + 1 : 0);
-                int take = Math.Min(word.Length - wordPos, remaining);
-
-                // Если слово не помещается в текущую строку
-                if (take <= 0 && currentLine.Length > 0)
+                if (currentLine.Length + 1 + word.Length > maxWidth)
                 {
                     lines.Add(currentLine.ToString());
                     _ = currentLine.Clear();
-                    remaining = maxWidth;
-                    take = Math.Min(word.Length - wordPos, remaining);
-                }
-
-                // Если слово длиннее maxWidth, разбиваем его
-                if (take < word.Length - wordPos)
-                {
-                    if (currentLine.Length > 0)
-                    {
-                        lines.Add(currentLine.ToString());
-                        _ = currentLine.Clear();
-                    }
-                    lines.Add(word.Substring(wordPos, Math.Min(maxWidth, word.Length - wordPos)));
-                    wordPos += Math.Min(maxWidth, word.Length - wordPos);
                 }
                 else
                 {
-                    if (currentLine.Length > 0)
-                        _ = currentLine.Append(' ');
-                    _ = currentLine.Append(word.Substring(wordPos, take));
-                    wordPos += take;
+                    _ = currentLine.Append(' ');
                 }
+            }
+            // Если слово длиннее maxWidth, разбиваем его
+            int wordPos = 0;
+            while (word.Length - wordPos > maxWidth)
+            {
+                if (currentLine.Length > 0)
+                {
+                    lines.Add(currentLine.ToString());
+                    _ = currentLine.Clear();
+                }
+                lines.Add(word.Substring(wordPos, maxWidth));
+                wordPos += maxWidth;
+            }
+            if (wordPos < word.Length)
+            {
+                _ = currentLine.Append(word[wordPos..]);
             }
         }
         if (currentLine.Length > 0)
@@ -109,8 +104,17 @@ public class InputMenu()
         // --- Переносим заголовок по словам ---
         List<string> titleLines = WrapText(Title, lineWidth);
 
+        // --- Переносим текст каждого prompt в элементе меню ---
+        List<List<string>> promptLinesList = [.. MenuItems
+            .Select(item =>
+            {
+                List<string> lines = WrapText(item.Text, lineWidth - 2);
+                if (lines.Count == 0) lines.Add("");
+                return lines;
+            })];
+
         // --- Сохраняем высоту меню ---
-        menuHeight = titleLines.Count + MenuItems.Count;
+        menuHeight = titleLines.Count + promptLinesList.Sum(l => l.Count);
 
         // --- Отрисовка заголовка ---
         Console.ForegroundColor = Theme.TitleTextColor;
@@ -131,48 +135,70 @@ public class InputMenu()
             Console.ResetColor();
         }
 
+        // --- Новый метод для вычисления смещения по вертикали для i-го элемента ---
+        int GetMenuItemTop(int index)
+        {
+            int offset = titleLines.Count;
+            for (int i = 0; i < index; i++)
+                offset += promptLinesList[i].Count;
+            return menuTop + offset;
+        }
+
         void DrawMenuLine(int i, bool isSelected)
         {
-            int lineWidth = Console.WindowWidth > 1 ? Console.WindowWidth - 1 : 64;
-            // --- Сдвигаем вниз на количество строк заголовка ---
-            Console.SetCursorPosition(0, menuTop + titleLines.Count + i);
-
+            int itemTop = GetMenuItemTop(i);
             InputMenuItem item = MenuItems[i];
             string value = item.InputValue ?? "";
-            string prompt = item.Text + ": ";
-            string line = prompt + value;
+            List<string> promptLines = promptLinesList[i];
 
-            if (isSelected)
+            for (int lineIdx = 0; lineIdx < promptLines.Count; lineIdx++)
             {
-                Console.BackgroundColor = Theme.SelectedBackgroundColor;
-                Console.ForegroundColor = Theme.SelectedTextColor;
-                if (line.Length < lineWidth)
-                    Console.Write(line.PadRight(lineWidth));
+                Console.SetCursorPosition(0, itemTop + lineIdx);
+
+                bool isLastPromptLine = (lineIdx == promptLines.Count - 1);
+                string prompt = isLastPromptLine ? promptLines[lineIdx] + ": " : promptLines[lineIdx];
+
+                if (isSelected)
+                {
+                    Console.BackgroundColor = Theme.SelectedBackgroundColor;
+                    Console.ForegroundColor = Theme.SelectedTextColor;
+                    if (isLastPromptLine)
+                    {
+                        string line = prompt + value;
+                        if (line.Length <= lineWidth)
+                            Console.Write(line.PadRight(lineWidth));
+                        else
+                        {
+                            // Переносим значение на следующую строку, если не помещается
+                            Console.Write(prompt.PadRight(lineWidth));
+                            Console.SetCursorPosition(0, itemTop + lineIdx + 1);
+                            Console.Write(value.PadRight(lineWidth));
+                        }
+                    }
+                    else Console.Write(prompt.PadRight(lineWidth));
+                }
                 else
-                    Console.Write(line);
+                {
+                    Console.BackgroundColor = Theme.UnselectedBackgroundColor;
+                    Console.ForegroundColor = Theme.FieldTextColor;
+                    if (isLastPromptLine)
+                    {
+                        Console.Write(prompt.Length < lineWidth ? prompt : prompt[..lineWidth]);
+                        int left = Math.Min(prompt.Length, lineWidth);
+                        Console.SetCursorPosition(left, itemTop + lineIdx);
+                        Console.ForegroundColor = Theme.UnselectedTextColor;
+                        int valueLen = Math.Min(value.Length, lineWidth - left);
+                        if (valueLen > 0)
+                            Console.Write(value[..valueLen]);
+
+                        int pad = lineWidth - Math.Min((prompt + value).Length, lineWidth);
+                        if (pad > 0)
+                            Console.Write(new string(' ', pad));
+                    }
+                    else Console.Write(prompt.PadRight(lineWidth));
+                }
+                Console.ResetColor();
             }
-            else
-            {
-                Console.BackgroundColor = Theme.UnselectedBackgroundColor;
-                Console.ForegroundColor = Theme.FieldTextColor;
-                if (prompt.Length < lineWidth)
-                    Console.Write(prompt);
-                else
-                    Console.Write(prompt[..lineWidth]);
-
-                int left = Math.Min(prompt.Length, lineWidth);
-                Console.SetCursorPosition(left, menuTop + titleLines.Count + i);
-                Console.ForegroundColor = Theme.UnselectedTextColor;
-                int valueLen = Math.Min(value.Length, lineWidth - left);
-                if (valueLen > 0)
-                    Console.Write(value[..valueLen]);
-
-                int pad = lineWidth - Math.Min(line.Length, lineWidth);
-                if (pad > 0)
-                    Console.Write(new string(' ', pad));
-            }
-
-            Console.ResetColor();
         }
 
         void Redraw()
@@ -194,11 +220,12 @@ public class InputMenu()
         while (true)
         {
             InputMenuItem currentItem = MenuItems[selected];
-            string prompt = $"{currentItem.Text}: ";
+            List<string> promptLines = promptLinesList[selected];
+            string prompt = promptLines[^1] + ": ";
             StringBuilder inputBuilder = new(currentItem.InputValue ?? string.Empty);
             inputLeft = prompt.Length;
-            // --- Корректируем позицию курсора с учётом высоты заголовка ---
-            inputTop = menuTop + titleLines.Count + selected;
+            // --- Корректируем позицию курсора с учётом высоты заголовка и многострочности prompt ---
+            inputTop = GetMenuItemTop(selected) + promptLines.Count - 1;
 
             // --- Корректируем позицию курсора, если поле короче ---
             if (cursorPos > inputBuilder.Length)
