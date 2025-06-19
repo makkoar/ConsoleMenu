@@ -162,12 +162,22 @@ public class InputMenu()
             Console.ResetColor();
         }
 
+        // --- Новый метод для вычисления высоты элемента меню с учётом многострочного значения ---
+        int GetMenuItemHeight(int index)
+        {
+            var promptLines = promptLinesList[index];
+            var value = MenuItems[index].InputValue ?? "";
+            var valueLines = WrapInputValue(value, promptLines[^1].Length + 2, lineWidth); // +2 для ": "
+            // promptLines.Count - 1 строк без значения, последняя строка prompt + valueLines.Count
+            return (promptLines.Count - 1) + valueLines.Count;
+        }
+
         // --- Новый метод для вычисления смещения по вертикали для i-го элемента ---
         int GetMenuItemTop(int index)
         {
             int offset = titleLines.Count;
             for (int i = 0; i < index; i++)
-                offset += promptLinesList[i].Count;
+                offset += GetMenuItemHeight(i);
             return menuTop + offset;
         }
 
@@ -241,6 +251,11 @@ public class InputMenu()
 
         void Redraw()
         {
+            // Пересчитываем menuHeight с учётом многострочных значений
+            menuHeight = titleLines.Count;
+            for (int i = 0; i < MenuItems.Count; i++)
+                menuHeight += GetMenuItemHeight(i);
+
             for (int i = 0; i < MenuItems.Count; i++)
                 DrawMenuLine(i, i == selected);
         }
