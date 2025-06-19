@@ -57,7 +57,7 @@ public class SelectMenu()
 
             Console.ForegroundColor = Theme.TitleTextColor;
             Console.BackgroundColor = Theme.TitleBackgroundColor;
-            Console.WriteLine(Title.PadRight(64));
+            Console.WriteLine(Title.PadRight(Console.WindowWidth - 1));
             for (ushort i = 0; i < MenuItems.Count; i++)
             {
                 if (i == selected)
@@ -70,7 +70,7 @@ public class SelectMenu()
                     Console.ForegroundColor = Theme.UnselectedTextColor;
                     Console.BackgroundColor = Theme.UnselectedBackgroundColor;
                 }
-                Console.WriteLine($"* {MenuItems[i].Text}".PadRight(64));
+                Console.WriteLine($"* {MenuItems[i].Text}".PadRight(Console.WindowWidth - 1));
             }
             Console.ResetColor(); // Сброс темы для последующего вывода в консоль
 
