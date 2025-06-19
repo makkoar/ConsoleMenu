@@ -127,6 +127,10 @@ public class InputMenu()
         int inputTop = 0;
         int cursorPos = 0;
 
+        // --- Устанавливаем каретку в конец первого поля при запуске меню ---
+        if (MenuItems.Count > 0)
+            cursorPos = (MenuItems[0].InputValue ?? string.Empty).Length;
+
         while (true)
         {
             InputMenuItem currentItem = MenuItems[selected];
@@ -134,10 +138,10 @@ public class InputMenu()
             StringBuilder inputBuilder = new(currentItem.InputValue ?? string.Empty);
             inputLeft = prompt.Length;
             inputTop = menuTop + 1 + selected;
-            cursorPos = inputBuilder.Length; // по умолчанию — в конец
 
-            // Если пользователь уже редактировал поле, сохраняем позицию
-            // (можно доработать, если нужно хранить позицию между переходами по полям)
+            // --- Корректируем позицию курсора, если поле короче ---
+            if (cursorPos > inputBuilder.Length)
+                cursorPos = inputBuilder.Length;
 
             Console.SetCursorPosition(inputLeft + cursorPos, inputTop);
             Console.CursorVisible = true;
