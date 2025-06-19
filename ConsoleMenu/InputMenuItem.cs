@@ -34,5 +34,42 @@ public class InputMenuItem(string text, string? defaultValue = "", string? id = 
     /// <param name="value">Выходной параметр, содержащий преобразованное число, если операция прошла успешно.</param>
     /// <returns><c>true</c>, если преобразование успешно; иначе <c>false</c>.</returns>
     public bool TryGetDecimal(out decimal value) => decimal.TryParse(InputValue, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+
+    /// <summary>Преобразует введённое значение в <see cref="int"/> или выбрасывает исключение.</summary>
+    public int GetInt()
+    {
+        if (int.TryParse(InputValue, out int value))
+            return value;
+        throw new FormatException($"Значение \"{InputValue}\" не может быть преобразовано в int.");
+    }
+
+    /// <summary>Преобразует введённое значение в <see cref="float"/> или выбрасывает исключение.</summary>
+    public float GetFloat()
+    {
+        if (float.TryParse(InputValue, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
+            return value;
+        throw new FormatException($"Значение \"{InputValue}\" не может быть преобразовано в float.");
+    }
+
+    /// <summary>Преобразует введённое значение в <see cref="double"/> или выбрасывает исключение.</summary>
+    public double GetDouble()
+    {
+        if (double.TryParse(InputValue, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
+            return value;
+        throw new FormatException($"Значение \"{InputValue}\" не может быть преобразовано в double.");
+    }
+
+    /// <summary>Преобразует введённое значение в <see cref="decimal"/> или выбрасывает исключение.</summary>
+    public decimal GetDecimal()
+    {
+        if (decimal.TryParse(InputValue, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal value))
+            return value;
+        throw new FormatException($"Значение \"{InputValue}\" не может быть преобразовано в decimal.");
+    }
+    #endregion
+
+    #region Переопределённые методы
+    /// <summary>Возвращает строковое представление объекта.</summary>
+    public override string ToString() => InputValue ?? string.Empty;
     #endregion
 }
