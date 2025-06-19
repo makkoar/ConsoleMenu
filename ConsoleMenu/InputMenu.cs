@@ -43,7 +43,8 @@ public class InputMenu()
     #region Основная логика
     /// <summary>Отображает меню, обрабатывает ввод пользователя и обновляет значения в <see cref="MenuItems"/>.</summary>
     /// <param name="clear">Указывает, нужно ли очищать консоль перед отображением меню.</param>
-    public void Apply(bool clear = false)
+    /// <returns>Словарь, где ключ — это <see cref="InputMenuItem.Id"/>, а значение — сам элемент <see cref="InputMenuItem"/>.</returns>
+    public Dictionary<string, InputMenuItem> Apply(bool clear = false)
     {
         List<string?> initialValues = [.. MenuItems.Select(item => item.InputValue)];
         int selected = 0;
@@ -58,7 +59,6 @@ public class InputMenu()
         Console.SetCursorPosition(0, menuTop);
         Console.WriteLine(Title);
 
-        // --- Локальная функция для очистки области меню ---
         void ClearMenuArea()
         {
             int lineWidth = Console.WindowWidth > 1 ? Console.WindowWidth - 1 : 64;
@@ -72,7 +72,6 @@ public class InputMenu()
             Console.ResetColor();
         }
 
-        // --- Локальная функция для отрисовки одной строки меню ---
         void DrawMenuLine(int i, bool isSelected)
         {
             int lineWidth = Console.WindowWidth > 1 ? Console.WindowWidth - 1 : 64;
@@ -95,14 +94,12 @@ public class InputMenu()
             else
             {
                 Console.BackgroundColor = Theme.UnselectedBackgroundColor;
-                // Текст-приглашение
                 Console.ForegroundColor = Theme.FieldTextColor;
                 if (prompt.Length < lineWidth)
                     Console.Write(prompt);
                 else
                     Console.Write(prompt[..lineWidth]);
 
-                // Вводимое значение
                 int left = Math.Min(prompt.Length, lineWidth);
                 Console.SetCursorPosition(left, menuTop + 1 + i);
                 Console.ForegroundColor = Theme.UnselectedTextColor;
@@ -110,7 +107,6 @@ public class InputMenu()
                 if (valueLen > 0)
                     Console.Write(value[..valueLen]);
 
-                // Дополнение пробелами до конца строки
                 int pad = lineWidth - Math.Min(line.Length, lineWidth);
                 if (pad > 0)
                     Console.Write(new string(' ', pad));
@@ -119,7 +115,6 @@ public class InputMenu()
             Console.ResetColor();
         }
 
-        // --- 1. Перерисовка меню ---
         void Redraw()
         {
             for (int i = 0; i < MenuItems.Count; i++)
@@ -162,14 +157,14 @@ public class InputMenu()
                     MenuItems[j].InputValue = initialValues[j];
                 Console.CursorVisible = false;
                 ClearMenuArea();
-                return;
+                return MenuItems.ToDictionary(item => item.Id, item => item);
             }
             if (keyInfo.Key == ConsoleKey.Enter)
             {
                 MenuItems[selected].InputValue = inputBuilder.ToString();
                 Console.CursorVisible = false;
                 ClearMenuArea();
-                return;
+                return MenuItems.ToDictionary(item => item.Id, item => item);
             }
             if (keyInfo.Key == ConsoleKey.Backspace)
             {
@@ -191,27 +186,9 @@ public class InputMenu()
             }
         }
     }
-
-    /// <summary>Возвращает текущие значения всех элементов меню в виде словаря.</summary>
-    /// <returns>Словарь, где ключ — это <see cref="InputMenuItem.Id"/>, а значение — это <see cref="InputMenuItem.InputValue"/>.</returns>
-    public Dictionary<string, string?> GetInputs()
-    {
-        return MenuItems.ToDictionary(item => item.Id, item => item.InputValue);
-    }
     #endregion
 
     #region Строитель
-    /// <summary>Добавляет новый элемент в меню ввода.</summary>
-    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
-    /// <param name="defaultValue">Начальное значение поля ввода.</param>
-    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
-    /// <returns>Меню с добавленным элементом для дальнейшей настройки.</returns>
-    public InputMenu AddMenuItem(string text, string? defaultValue = "", string? id = null)
-    {
-        var newItem = new InputMenuItem(text, defaultValue, id);
-        return AddMenuItem(newItem);
-    }
-
     /// <summary>Добавляет готовый элемент меню, проверяя уникальность его ID.</summary>
     /// <param name="item">Экземпляр <see cref="InputMenuItem"/> для добавления.</param>
     /// <returns>Меню с добавленным элементом для дальнейшей настройки.</returns>
@@ -222,24 +199,25 @@ public class InputMenu()
             item.Id = nextDefaultId.ToString();
 
         if (!usedIds.Add(item.Id))
-        {
             throw new ArgumentException($"Элемент с ID '{item.Id}' уже существует в этом меню.", nameof(item));
-        }
 
         MenuItems.Add(item);
 
         // Если пользователь вручную задал числовой ID, убедимся, что наш авто-инкремент его не перезапишет.
         if (int.TryParse(item.Id, out int numericId))
-        {
             nextDefaultId = Math.Max(nextDefaultId, numericId + 1);
-        }
         else if (item.Id == (nextDefaultId - 1 > 0 ? nextDefaultId - 1 : 0).ToString())
-        {
             nextDefaultId++;
-        }
 
         return this;
     }
+
+    /// <summary>Добавляет новый элемент в меню ввода.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Меню с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, string? defaultValue = "", string? id = null) => AddMenuItem(new InputMenuItem(text, defaultValue, id));
 
     /// <summary>Заменяет заголовок меню на новый.</summary>
     /// <param name="newTitle">Новый заголовок меню.</param>
