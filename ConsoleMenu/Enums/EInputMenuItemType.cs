@@ -1,18 +1,28 @@
 namespace ConsoleMenu.Enums;
 
-/// <summary>Перечисление возможных типов значения для InputMenuItem.</summary>
+/// <summary>Перечисление поддерживаемых типов ввода для InputMenuItem.</summary>
 public enum EInputMenuItemType : byte
 {
-    /// <summary>Строковое значение.</summary>
+    /// <summary>Строковый тип ввода.</summary>
     String,
-    /// <summary>Целое число (int).</summary>
+    /// <summary>Целочисленный тип ввода.</summary>
     Int,
-    /// <summary>Число с плавающей точкой (float).</summary>
+    /// <summary>Целочисленный тип ввода без знака.</summary>
+    UInt,
+    /// <summary>Короткий целочисленный тип ввода.</summary>
+    Short,
+    /// <summary>Короткий целочисленный тип ввода без знака.</summary>
+    UShort,
+    /// <summary>Тип ввода для байта.</summary>
+    Byte,
+    /// <summary>Тип ввода для знакового байта.</summary>
+    SByte,
+    /// <summary>Тип ввода для числа с плавающей точкой (float).</summary>
     Float,
-    /// <summary>Число с плавающей точкой двойной точности (double).</summary>
+    /// <summary>Тип ввода для числа с плавающей точкой двойной точности (double).</summary>
     Double,
-    /// <summary>Десятичное число (decimal).</summary>
+    /// <summary>Тип ввода для десятичного числа.</summary>
     Decimal,
-    /// <summary>Логическое значение (bool).</summary>
+    /// <summary>Логический тип ввода.</summary>
     Bool
 }
