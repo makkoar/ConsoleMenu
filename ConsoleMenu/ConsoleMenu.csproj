@@ -8,8 +8,8 @@
 		<Authors>makkoar</Authors>
 		<Company>SkyRez</Company>
 		<Description>
-			Library for creating a simple button menu in the console.
-			Библиотека для создания простого кнопочного меню в консоли.
+			Cross-platform library for creating interactive console menus with buttons, data input, and extensible elements. Supports .NET Standard 2.1 and higher.
+			Кроссплатформенная библиотека для создания интерактивных консольных меню с поддержкой кнопок, ввода данных и расширяемых элементов. Поддерживает .NET Standard 2.1 и выше.
 		</Description>
 		<RepositoryUrl>https://github.com/makkoar/ConsoleMenu</RepositoryUrl>
 		<PackageTags>Консоль, Console, Menu, Меню, Simple, Простое</PackageTags>
