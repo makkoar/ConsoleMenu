@@ -12,6 +12,9 @@ public class InputMenuItem(string text, string? defaultValue = "", string? id = 
 
     /// <summary>Значение, которое будет использоваться как значение по умолчанию,<br/>а также будет содержать итоговый ввод пользователя.</summary>
     public string? InputValue { get; set; } = defaultValue;
+
+    /// <summary>Тип значения, ожидаемого для этого элемента меню.</summary>
+    public EInputMenuItemType Type { get; set; } = EInputMenuItemType.String;
     #endregion
 
     #region Вспомогательные методы для получения значений
@@ -36,36 +39,16 @@ public class InputMenuItem(string text, string? defaultValue = "", string? id = 
     public bool TryGetDecimal(out decimal value) => decimal.TryParse(InputValue, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
 
     /// <summary>Преобразует введённое значение в <see cref="int"/> или выбрасывает исключение.</summary>
-    public int GetInt()
-    {
-        if (int.TryParse(InputValue, out int value))
-            return value;
-        throw new FormatException($"Значение \"{InputValue}\" не может быть преобразовано в int.");
-    }
+    public int GetInt() => int.TryParse(InputValue, out int value) ? value : throw new FormatException($"Значение \"{InputValue}\" не может быть преобразовано в int.");
 
     /// <summary>Преобразует введённое значение в <see cref="float"/> или выбрасывает исключение.</summary>
-    public float GetFloat()
-    {
-        if (float.TryParse(InputValue, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
-            return value;
-        throw new FormatException($"Значение \"{InputValue}\" не может быть преобразовано в float.");
-    }
+    public float GetFloat() => float.TryParse(InputValue, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : throw new FormatException($"Значение \"{InputValue}\" не может быть преобразовано в float.");
 
     /// <summary>Преобразует введённое значение в <see cref="double"/> или выбрасывает исключение.</summary>
-    public double GetDouble()
-    {
-        if (double.TryParse(InputValue, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
-            return value;
-        throw new FormatException($"Значение \"{InputValue}\" не может быть преобразовано в double.");
-    }
+    public double GetDouble() => double.TryParse(InputValue, NumberStyles.Float, CultureInfo.InvariantCulture, out double value) ? value : throw new FormatException($"Значение \"{InputValue}\" не может быть преобразовано в double.");
 
     /// <summary>Преобразует введённое значение в <see cref="decimal"/> или выбрасывает исключение.</summary>
-    public decimal GetDecimal()
-    {
-        if (decimal.TryParse(InputValue, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal value))
-            return value;
-        throw new FormatException($"Значение \"{InputValue}\" не может быть преобразовано в decimal.");
-    }
+    public decimal GetDecimal() => decimal.TryParse(InputValue, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal value) ? value : throw new FormatException($"Значение \"{InputValue}\" не может быть преобразовано в decimal.");
     #endregion
 
     #region Переопределённые методы

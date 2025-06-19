@@ -125,6 +125,7 @@ public class InputMenu()
 
         int inputLeft = 0;
         int inputTop = 0;
+        int cursorPos = 0;
 
         while (true)
         {
@@ -133,56 +134,92 @@ public class InputMenu()
             StringBuilder inputBuilder = new(currentItem.InputValue ?? string.Empty);
             inputLeft = prompt.Length;
             inputTop = menuTop + 1 + selected;
+            cursorPos = inputBuilder.Length; // по умолчанию — в конец
 
-            Console.SetCursorPosition(inputLeft + inputBuilder.Length, inputTop);
+            // Если пользователь уже редактировал поле, сохраняем позицию
+            // (можно доработать, если нужно хранить позицию между переходами по полям)
+
+            Console.SetCursorPosition(inputLeft + cursorPos, inputTop);
             Console.CursorVisible = true;
 
-            ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+            while (true)
+            {
+                ConsoleKeyInfo keyInfo = Console.ReadKey(true);
 
-            if (keyInfo.Key == ConsoleKey.UpArrow)
-            {
-                selected = (selected - 1 + MenuItems.Count) % MenuItems.Count;
-                Redraw();
-                continue;
-            }
-            if (keyInfo.Key == ConsoleKey.DownArrow)
-            {
-                selected = (selected + 1) % MenuItems.Count;
-                Redraw();
-                continue;
-            }
-            if (keyInfo.Key == ConsoleKey.Escape)
-            {
-                for (int j = 0; j < MenuItems.Count; j++)
-                    MenuItems[j].InputValue = initialValues[j];
-                Console.CursorVisible = false;
-                ClearMenuArea();
-                return MenuItems.ToDictionary(item => item.Id, item => item);
-            }
-            if (keyInfo.Key == ConsoleKey.Enter)
-            {
-                MenuItems[selected].InputValue = inputBuilder.ToString();
-                Console.CursorVisible = false;
-                ClearMenuArea();
-                return MenuItems.ToDictionary(item => item.Id, item => item);
-            }
-            if (keyInfo.Key == ConsoleKey.Backspace)
-            {
-                if (inputBuilder.Length > 0)
+                if (keyInfo.Key == ConsoleKey.UpArrow)
                 {
-                    _ = inputBuilder.Remove(inputBuilder.Length - 1, 1);
+                    MenuItems[selected].InputValue = inputBuilder.ToString();
+                    selected = (selected - 1 + MenuItems.Count) % MenuItems.Count;
+                    Redraw();
+                    break;
+                }
+                if (keyInfo.Key == ConsoleKey.DownArrow)
+                {
+                    MenuItems[selected].InputValue = inputBuilder.ToString();
+                    selected = (selected + 1) % MenuItems.Count;
+                    Redraw();
+                    break;
+                }
+                if (keyInfo.Key == ConsoleKey.Escape)
+                {
+                    for (int j = 0; j < MenuItems.Count; j++)
+                        MenuItems[j].InputValue = initialValues[j];
+                    Console.CursorVisible = false;
+                    ClearMenuArea();
+                    return MenuItems.ToDictionary(item => item.Id, item => item);
+                }
+                if (keyInfo.Key == ConsoleKey.Enter)
+                {
+                    MenuItems[selected].InputValue = inputBuilder.ToString();
+                    Console.CursorVisible = false;
+                    ClearMenuArea();
+                    return MenuItems.ToDictionary(item => item.Id, item => item);
+                }
+                if (keyInfo.Key == ConsoleKey.Backspace)
+                {
+                    if (cursorPos > 0)
+                    {
+                        _ = inputBuilder.Remove(cursorPos - 1, 1);
+                        cursorPos--;
+                        MenuItems[selected].InputValue = inputBuilder.ToString();
+                        Redraw();
+                        Console.SetCursorPosition(inputLeft + cursorPos, inputTop);
+                    }
+                    continue;
+                }
+                if (keyInfo.Key == ConsoleKey.Delete)
+                {
+                    if (cursorPos < inputBuilder.Length)
+                    {
+                        _ = inputBuilder.Remove(cursorPos, 1);
+                        MenuItems[selected].InputValue = inputBuilder.ToString();
+                        Redraw();
+                        Console.SetCursorPosition(inputLeft + cursorPos, inputTop);
+                    }
+                    continue;
+                }
+                if (keyInfo.Key == ConsoleKey.LeftArrow)
+                {
+                    if (cursorPos > 0)
+                        cursorPos--;
+                    Console.SetCursorPosition(inputLeft + cursorPos, inputTop);
+                    continue;
+                }
+                if (keyInfo.Key == ConsoleKey.RightArrow)
+                {
+                    if (cursorPos < inputBuilder.Length)
+                        cursorPos++;
+                    Console.SetCursorPosition(inputLeft + cursorPos, inputTop);
+                    continue;
+                }
+                if (!char.IsControl(keyInfo.KeyChar))
+                {
+                    _ = inputBuilder.Insert(cursorPos, keyInfo.KeyChar);
+                    cursorPos++;
                     MenuItems[selected].InputValue = inputBuilder.ToString();
                     Redraw();
-                    Console.SetCursorPosition(inputLeft + inputBuilder.Length, inputTop);
+                    Console.SetCursorPosition(inputLeft + cursorPos, inputTop);
                 }
-                continue;
-            }
-            if (!char.IsControl(keyInfo.KeyChar))
-            {
-                _ = inputBuilder.Append(keyInfo.KeyChar);
-                MenuItems[selected].InputValue = inputBuilder.ToString();
-                Redraw();
-                Console.SetCursorPosition(inputLeft + inputBuilder.Length, inputTop);
             }
         }
     }

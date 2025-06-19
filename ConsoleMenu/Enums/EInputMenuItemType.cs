@@ -1,7 +1,7 @@
 namespace ConsoleMenu.Enums;
 
 /// <summary>Перечисление возможных типов значения для InputMenuItem.</summary>
-public enum EInputMenuItemType
+public enum EInputMenuItemType : byte
 {
     /// <summary>Строковое значение.</summary>
     String,
