@@ -92,27 +92,134 @@ public class InputMenu()
     private static List<string> WrapInputValue(string value, int promptLen, int maxWidth)
     {
         List<string> lines = [];
-        int idx = 0;
-        int firstLineLen = maxWidth - promptLen;
-        // Первая строка
-        if (value.Length > firstLineLen)
+        if (string.IsNullOrEmpty(value))
         {
-            lines.Add(value.Substring(0, firstLineLen));
-            idx += firstLineLen;
-        }
-        else
-        {
-            lines.Add(value);
+            lines.Add("");
             return lines;
         }
-        // Остальные строки
-        while (idx < value.Length)
+
+        // Для первой строки учитываем длину prompt
+        int firstLineWidth = maxWidth - promptLen;
+        if (firstLineWidth <= 0)
+            firstLineWidth = maxWidth;
+
+        string[] words = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        StringBuilder currentLine = new();
+        int lineWidth = firstLineWidth;
+        int wordIdx = 0;
+
+        while (wordIdx < words.Length)
         {
-            int len = Math.Min(maxWidth, value.Length - idx);
-            lines.Add(value.Substring(idx, len));
-            idx += len;
+            string word = words[wordIdx];
+            if (currentLine.Length > 0)
+            {
+                if (currentLine.Length + 1 + word.Length > lineWidth)
+                {
+                    lines.Add(currentLine.ToString());
+                    currentLine.Clear();
+                    lineWidth = maxWidth; // со второй строки учитываем всю ширину
+                }
+                else
+                {
+                    currentLine.Append(' ');
+                }
+            }
+
+            // Если слово длиннее ширины строки, разбиваем его
+            int wordPos = 0;
+            while (word.Length - wordPos > lineWidth - currentLine.Length)
+            {
+                if (currentLine.Length > 0)
+                {
+                    lines.Add(currentLine.ToString());
+                    currentLine.Clear();
+                    lineWidth = maxWidth;
+                }
+                int take = Math.Min(lineWidth, word.Length - wordPos);
+                lines.Add(word.Substring(wordPos, take));
+                wordPos += take;
+            }
+            if (wordPos < word.Length)
+            {
+                currentLine.Append(word.Substring(wordPos));
+            }
+            wordIdx++;
         }
+        if (currentLine.Length > 0)
+            lines.Add(currentLine.ToString());
+
         return lines;
+    }
+
+    /// <summary>Вычисляет строку и столбец курсора для многострочного значения.</summary>
+    /// <param name="value">Текущее значение поля ввода.</param>
+    /// <param name="cursorPos">Позиция курсора в строке.</param>
+    /// <param name="promptLen">Длина текста prompt.</param>
+    /// <param name="maxWidth">Максимальная ширина строки.</param>
+    /// <returns>Кортеж, содержащий строку и столбец курсора.</returns>
+    private static (int line, int col) GetCursorLineCol(string value, int cursorPos, int promptLen, int maxWidth)
+    {
+        if (string.IsNullOrEmpty(value) || cursorPos == 0)
+            return (0, 0);
+
+        int firstLineWidth = maxWidth - promptLen;
+        if (firstLineWidth <= 0)
+            firstLineWidth = maxWidth;
+
+        int line = 0, col = 0, pos = 0;
+        int lineWidth = firstLineWidth;
+        int i = 0;
+        while (i < value.Length && pos < cursorPos)
+        {
+            int start = i;
+            // Найти конец слова или пробела
+            while (i < value.Length && value[i] != ' ') i++;
+            int wordLen = i - start;
+            int wordPos = 0;
+            while (wordLen > 0)
+            {
+                int spaceLeft = lineWidth - col;
+                int take = Math.Min(wordLen, spaceLeft);
+                if (take == 0)
+                {
+                    line++;
+                    col = 0;
+                    lineWidth = maxWidth;
+                    continue;
+                }
+                // Вставляем посимвольно, чтобы корректно вычислять позицию курсора
+                for (int k = 0; k < take && pos < cursorPos; k++)
+                {
+                    col++;
+                    pos++;
+                    wordPos++;
+                    if (col == lineWidth && (wordPos < wordLen || (pos < cursorPos && k + 1 < take)))
+                    {
+                        line++;
+                        col = 0;
+                        lineWidth = maxWidth;
+                    }
+                }
+                wordLen -= take;
+            }
+            // Если это пробел, добавить его
+            if (i < value.Length && value[i] == ' ')
+            {
+                if (col == lineWidth)
+                {
+                    line++;
+                    col = 0;
+                    lineWidth = maxWidth;
+                }
+                if (pos < cursorPos)
+                {
+                    col++;
+                    pos++;
+                }
+                i++;
+            }
+        }
+        return (line, col);
     }
 
     /// <summary>Отображает меню, обрабатывает ввод пользователя по каждому полю и обновляет значения в <see cref="MenuItems"/>.<br/>Позволяет перемещаться между полями, редактировать значения, отменять ввод или подтверждать результат.</summary>
@@ -284,7 +391,8 @@ public class InputMenu()
             if (cursorPos > inputBuilder.Length)
                 cursorPos = inputBuilder.Length;
 
-            Console.SetCursorPosition(inputLeft + cursorPos, inputTop);
+            var (cursorLine, cursorCol) = GetCursorLineCol(inputBuilder.ToString(), cursorPos, inputLeft, lineWidth);
+            Console.SetCursorPosition((cursorLine == 0 ? inputLeft : 0) + cursorCol, inputTop + cursorLine);
             Console.CursorVisible = true;
 
             while (true)
@@ -369,19 +477,7 @@ public class InputMenu()
                         MenuItems[selected].InputValue = inputBuilder.ToString();
                         Redraw();
                         // --- Корректно вычисляем позицию курсора ---
-                        var valueLines = WrapInputValue(inputBuilder.ToString(), inputLeft, lineWidth);
-                        int line = 0, col = 0, chars = 0;
-                        for (int l = 0; l < valueLines.Count; l++)
-                        {
-                            int len = valueLines[l].Length;
-                            if (cursorPos <= chars + len)
-                            {
-                                line = l;
-                                col = cursorPos - chars;
-                                break;
-                            }
-                            chars += len;
-                        }
+                        var (line, col) = GetCursorLineCol(inputBuilder.ToString(), cursorPos, inputLeft, lineWidth);
                         Console.SetCursorPosition((line == 0 ? inputLeft : 0) + col, inputTop + line);
                         continue; // пропускаем остальную обработку, т.к. уже всё сделали
                     }
@@ -723,19 +819,7 @@ public class InputMenu()
                         MenuItems[selected].InputValue = inputBuilder.ToString();
 
                         // --- После изменения inputBuilder и cursorPos ---
-                        var valueLines = WrapInputValue(inputBuilder.ToString(), inputLeft, lineWidth);
-                        int line = 0, col = 0, chars = 0;
-                        for (int l = 0; l < valueLines.Count; l++)
-                        {
-                            int len = valueLines[l].Length;
-                            if (cursorPos <= chars + len)
-                            {
-                                line = l;
-                                col = cursorPos - chars;
-                                break;
-                            }
-                            chars += len;
-                        }
+                        var (line, col) = GetCursorLineCol(inputBuilder.ToString(), cursorPos, inputLeft, lineWidth);
                         Console.SetCursorPosition((line == 0 ? inputLeft : 0) + col, inputTop + line);
                     }
                 }
@@ -743,19 +827,7 @@ public class InputMenu()
                 Redraw();
 
                 // Корректно вычисляем позицию курсора для многострочного значения
-                var valueLinesFinal = WrapInputValue(inputBuilder.ToString(), inputLeft, lineWidth);
-                int lineFinal = 0, colFinal = 0, charsFinal = 0;
-                for (int l = 0; l < valueLinesFinal.Count; l++)
-                {
-                    int len = valueLinesFinal[l].Length;
-                    if (cursorPos <= charsFinal + len)
-                    {
-                        lineFinal = l;
-                        colFinal = cursorPos - charsFinal;
-                        break;
-                    }
-                    charsFinal += len;
-                }
+                var (lineFinal, colFinal) = GetCursorLineCol(inputBuilder.ToString(), cursorPos, inputLeft, lineWidth);
                 Console.SetCursorPosition((lineFinal == 0 ? inputLeft : 0) + colFinal, inputTop + lineFinal);
 
                 if (breakInnerLoop)
