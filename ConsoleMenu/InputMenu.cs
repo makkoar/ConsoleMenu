@@ -1,4 +1,8 @@
-﻿namespace ConsoleMenu;
+﻿using System.Globalization;
+using System.Numerics;
+using System.Text;
+
+namespace ConsoleMenu;
 
 /// <summary>Класс, реализующий консольное меню для ввода данных пользователем по нескольким полям с поддержкой темизации, проверки уникальности идентификаторов и гибкой настройки элементов.<br/>Позволяет организовать пошаговый ввод значений с валидацией и возвратом результатов в виде словаря.</summary>
 public class InputMenu()
@@ -88,70 +92,97 @@ public class InputMenu()
         return lines;
     }
 
-    /// <summary>Разбивает значение на строки для отображения, учитывая длину prompt в первой строке.</summary>
+    /// <summary>Разбивает строку на список "токенов", где каждый токен - это либо слово, либо последовательность пробелов.</summary>
+    /// <param name="text">Входная строка.</param>
+    /// <returns>Список токенов.</returns>
+    private static List<string> Tokenize(string text)
+    {
+        var tokens = new List<string>();
+        if (string.IsNullOrEmpty(text)) return tokens;
+
+        int pos = 0;
+        while (pos < text.Length)
+        {
+            int start = pos;
+            bool isSpace = char.IsWhiteSpace(text[start]);
+            while (pos < text.Length && char.IsWhiteSpace(text[pos]) == isSpace)
+            {
+                pos++;
+            }
+            tokens.Add(text.Substring(start, pos - start));
+        }
+        return tokens;
+    }
+
+    /// <summary>Разбивает значение на строки для отображения, учитывая длину prompt в первой строке и перенося по словам.</summary>
     private static List<string> WrapInputValue(string value, int promptLen, int maxWidth)
     {
-        List<string> lines = [];
+        var lines = new List<string>();
         if (string.IsNullOrEmpty(value))
         {
             lines.Add("");
             return lines;
         }
 
-        // Для первой строки учитываем длину prompt
-        int firstLineWidth = maxWidth - promptLen;
-        if (firstLineWidth <= 0)
-            firstLineWidth = maxWidth;
+        var tokens = Tokenize(value);
+        var currentLine = new StringBuilder();
+        int currentWidth = maxWidth - promptLen;
 
-        string[] words = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        StringBuilder currentLine = new();
-        int lineWidth = firstLineWidth;
-        int wordIdx = 0;
-
-        while (wordIdx < words.Length)
+        foreach (var token in tokens)
         {
-            string word = words[wordIdx];
-            if (currentLine.Length > 0)
-            {
-                if (currentLine.Length + 1 + word.Length > lineWidth)
-                {
-                    lines.Add(currentLine.ToString());
-                    currentLine.Clear();
-                    lineWidth = maxWidth; // со второй строки учитываем всю ширину
-                }
-                else
-                {
-                    currentLine.Append(' ');
-                }
-            }
-
-            // Если слово длиннее ширины строки, разбиваем его
-            int wordPos = 0;
-            while (word.Length - wordPos > lineWidth - currentLine.Length)
+            if (token.Length > currentWidth && !char.IsWhiteSpace(token[0]))
             {
                 if (currentLine.Length > 0)
                 {
                     lines.Add(currentLine.ToString());
                     currentLine.Clear();
-                    lineWidth = maxWidth;
+                    currentWidth = maxWidth;
                 }
-                int take = Math.Min(lineWidth, word.Length - wordPos);
-                lines.Add(word.Substring(wordPos, take));
-                wordPos += take;
+                int wordPos = 0;
+                while (wordPos < token.Length)
+                {
+                    int take = Math.Min(currentWidth - currentLine.Length, token.Length - wordPos);
+                    if (take <= 0)
+                    {
+                        lines.Add(currentLine.ToString());
+                        currentLine.Clear();
+                        currentWidth = maxWidth;
+                        take = Math.Min(currentWidth, token.Length - wordPos);
+                    }
+                    currentLine.Append(token.Substring(wordPos, take));
+                    wordPos += take;
+                }
             }
-            if (wordPos < word.Length)
+            else if (currentLine.Length + token.Length > currentWidth)
             {
-                currentLine.Append(word.Substring(wordPos));
+                lines.Add(currentLine.ToString());
+                currentLine.Clear();
+                currentWidth = maxWidth;
+                if (!char.IsWhiteSpace(token[0]))
+                {
+                    currentLine.Append(token);
+                }
             }
-            wordIdx++;
+            else
+            {
+                currentLine.Append(token);
+            }
         }
+
         if (currentLine.Length > 0)
+        {
             lines.Add(currentLine.ToString());
+        }
+
+        if (lines.Count == 0)
+        {
+            lines.Add("");
+        }
 
         return lines;
     }
 
-    /// <summary>Вычисляет строку и столбец курсора для многострочного значения.</summary>
+    /// <summary>Вычисляет строку и столбец курсора для многострочного значения, используя ту же логику переноса по словам, что и WrapInputValue.</summary>
     /// <param name="value">Текущее значение поля ввода.</param>
     /// <param name="cursorPos">Позиция курсора в строке.</param>
     /// <param name="promptLen">Длина текста prompt.</param>
@@ -159,67 +190,102 @@ public class InputMenu()
     /// <returns>Кортеж, содержащий строку и столбец курсора.</returns>
     private static (int line, int col) GetCursorLineCol(string value, int cursorPos, int promptLen, int maxWidth)
     {
-        if (string.IsNullOrEmpty(value) || cursorPos == 0)
+        if (cursorPos == 0)
             return (0, 0);
 
-        int firstLineWidth = maxWidth - promptLen;
-        if (firstLineWidth <= 0)
-            firstLineWidth = maxWidth;
+        var tokens = Tokenize(value);
 
-        int line = 0, col = 0, pos = 0;
-        int lineWidth = firstLineWidth;
-        int i = 0;
-        while (i < value.Length && pos < cursorPos)
+        int currentLineIndex = 0;
+        var currentLineContent = new StringBuilder();
+        int currentWidth = maxWidth - promptLen;
+        int absolutePos = 0;
+
+        foreach (var token in tokens)
         {
-            int start = i;
-            // Найти конец слова или пробела
-            while (i < value.Length && value[i] != ' ') i++;
-            int wordLen = i - start;
-            int wordPos = 0;
-            while (wordLen > 0)
+            if (cursorPos <= absolutePos + token.Length)
             {
-                int spaceLeft = lineWidth - col;
-                int take = Math.Min(wordLen, spaceLeft);
-                if (take == 0)
+                int remainingPos = cursorPos - absolutePos;
+                int col = currentLineContent.Length;
+
+                if (token.Length > currentWidth && !char.IsWhiteSpace(token[0]))
                 {
-                    line++;
-                    col = 0;
-                    lineWidth = maxWidth;
-                    continue;
-                }
-                // Вставляем посимвольно, чтобы корректно вычислять позицию курсора
-                for (int k = 0; k < take && pos < cursorPos; k++)
-                {
-                    col++;
-                    pos++;
-                    wordPos++;
-                    if (col == lineWidth && (wordPos < wordLen || (pos < cursorPos && k + 1 < take)))
+                    int wordPartPos = 0;
+                    while (wordPartPos < remainingPos)
                     {
-                        line++;
-                        col = 0;
-                        lineWidth = maxWidth;
+                        int take = Math.Min(currentWidth - col, remainingPos - wordPartPos);
+                        if (take <= 0)
+                        {
+                            currentLineIndex++;
+                            col = 0;
+                            currentWidth = maxWidth;
+                            take = Math.Min(currentWidth, remainingPos - wordPartPos);
+                        }
+                        col += take;
+                        wordPartPos += take;
+                    }
+                    return (currentLineIndex, col);
+                }
+
+                if (col + token.Length > currentWidth)
+                {
+                    if (!char.IsWhiteSpace(token[0]))
+                    {
+                        currentLineIndex++;
+                        return (currentLineIndex, remainingPos);
+                    }
+                    else
+                    {
+                        currentLineIndex++;
+                        return (currentLineIndex, 0);
                     }
                 }
-                wordLen -= take;
+
+                col += remainingPos;
+                return (currentLineIndex, col);
             }
-            // Если это пробел, добавить его
-            if (i < value.Length && value[i] == ' ')
+
+            if (token.Length > currentWidth && !char.IsWhiteSpace(token[0]))
             {
-                if (col == lineWidth)
+                if (currentLineContent.Length > 0)
                 {
-                    line++;
-                    col = 0;
-                    lineWidth = maxWidth;
+                    currentLineIndex++;
+                    currentLineContent.Clear();
+                    currentWidth = maxWidth;
                 }
-                if (pos < cursorPos)
+                int wordPos = 0;
+                while (wordPos < token.Length)
                 {
-                    col++;
-                    pos++;
+                    int take = Math.Min(currentWidth - currentLineContent.Length, token.Length - wordPos);
+                    if (take <= 0)
+                    {
+                        currentLineIndex++;
+                        currentLineContent.Clear();
+                        currentWidth = maxWidth;
+                        take = Math.Min(currentWidth, token.Length - wordPos);
+                    }
+                    currentLineContent.Append(token.Substring(wordPos, take));
+                    wordPos += take;
                 }
-                i++;
             }
+            else if (currentLineContent.Length + token.Length > currentWidth)
+            {
+                currentLineIndex++;
+                currentLineContent.Clear();
+                currentWidth = maxWidth;
+                if (!char.IsWhiteSpace(token[0]))
+                {
+                    currentLineContent.Append(token);
+                }
+            }
+            else
+            {
+                currentLineContent.Append(token);
+            }
+
+            absolutePos += token.Length;
         }
-        return (line, col);
+
+        return (currentLineIndex, currentLineContent.Length);
     }
 
     /// <summary>Отображает меню, обрабатывает ввод пользователя по каждому полю и обновляет значения в <see cref="MenuItems"/>.<br/>Позволяет перемещаться между полями, редактировать значения, отменять ввод или подтверждать результат.</summary>
