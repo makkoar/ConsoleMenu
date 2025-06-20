@@ -452,7 +452,7 @@ public class InputMenu()
                                     if (dotIndex >= 0)
                                         rest = rest[..(dotIndex + 1)] + rest[(dotIndex + 1)..].Replace(".", string.Empty);
 
-                                    if (rest.Length > 1 && rest.StartsWith("0") && rest[1]  '.')
+                                    if (rest.Length > 1 && rest.StartsWith("0") && rest[1] is '.')
                                     {
                                         int firstNonZero = 0;
                                         while (firstNonZero < rest.Length && rest[firstNonZero] == '0') firstNonZero++;
