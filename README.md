@@ -1,10 +1,10 @@
 # Библиотека ConsoleMenu
 Библиотека ConsoleMenu предоставляет простой способ создания интерактивных текстовых меню в консольных приложениях на C#. Она поддерживает два основных типа меню:
 - **`SelectMenu`**: для выбора одного из предложенных вариантов.
-- **`InputMenu`**: для организации ввода нескольких полей данных от пользователя.
+- **`InputMenu`**: для организации ввода нескольких полей данных от пользователя с поддержкой валидации типов.
 
 ## Установка
-Для использования библиотеки ConsoleMenu, добавьте следующий `using` в вашем коде, например, в файл `Usings.cs`:
+Для использования библиотеки ConsoleMenu, добавьте следующий `using` в вашем коде, например, в файл `Usings.cs` или в начало вашего файла:
 ```csharp
 global using ConsoleMenu;
 ```
@@ -52,75 +52,109 @@ switch (choice)
 ```
 
 ### 3. Настройка тем
-Вы можете изменить внешний вид меню, настроив его темы. Библиотека предоставляет несколько встроенных шаблонов в `Themes.Templates`.
+Вы можете легко изменить внешний вид меню, присвоив свойству `Theme` одну из готовых тем из статического класса `Themes` или создав свою.
 
 ```csharp
+// Способ 1: Применить готовую тему из `Themes`
+mainMenu.Theme = Themes.Green;
+
+// Способ 2: Настроить цвета вручную с помощью метода SetThemes
 mainMenu.SetThemes(
-    title:      Themes.Templates.Yellow, // Тема для заголовка
-    selected:   Themes.Templates.Green,  // Тема для выбранного пункта
-    unselected: Themes.Templates.Black   // Тема для остальных пунктов
+    titleTextColor:          ConsoleColor.Yellow,
+    titleBackgroundColor:    ConsoleColor.Black,
+    selectedTextColor:       ConsoleColor.Black,
+    selectedBackgroundColor: ConsoleColor.Green,
+    unselectedTextColor:     ConsoleColor.Gray,
+    unselectedBackgroundColor: ConsoleColor.Black
 );
 
-// Также можно создать свою тему
-var customTheme = new Theme(ConsoleColor.DarkMagenta, ConsoleColor.White);
-mainMenu.Theme.Selected = customTheme;
+// Способ 3: Создать и модифицировать свою тему на основе существующей
+var customTheme = Themes.Classic; // Копируем классическую тему
+customTheme.SelectedBackgroundColor = ConsoleColor.DarkMagenta;
+customTheme.SelectedTextColor = ConsoleColor.White;
+mainMenu.Theme = customTheme;
 ```
 
 ## Использование `InputMenu` (Меню ввода)
 
-`InputMenu` позволяет организовать удобный ввод данных от пользователя по нескольким полям.
+`InputMenu` позволяет организовать удобный ввод данных от пользователя по нескольким полям, с валидацией типов и гибкой навигацией.
 
 ### 1. Создание меню
-Вы создаете экземпляр `InputMenu` и добавляете в него элементы `InputMenuItem`. Каждый элемент имеет текст-приглашение, значение по умолчанию и необязательный уникальный идентификатор (`Id`), который важен для последующего получения данных.
+Вы создаете экземпляр `InputMenu` и добавляете в него элементы `InputMenuItem`. Каждый элемент имеет текст-приглашение, значение по умолчанию, уникальный идентификатор (`Id`) и, что важно, тип вводимых данных (`EInputMenuItemType`), который ограничивает ввод пользователя.
 
 ```csharp
-// Создание меню ввода с помощью Fluent API
+// Создание меню ввода с помощью Fluent API и указанием типов
 var inputMenu = new InputMenu("Введите данные для подключения")
-    .AddMenuItem("Адрес сервера", "127.0.0.1", id: "server_ip")
-    .AddMenuItem("Порт", "8080", id: "port")
-    .AddMenuItem("Логин", "admin", id: "login");
+    .AddMenuItem(
+        text: "Адрес сервера", 
+        defaultValue: "127.0.0.1", 
+        id: "server_ip") // Тип по умолчанию - String
+    .AddMenuItem(
+        text: "Порт", 
+        defaultValue: "8080", 
+        id: "port", 
+        type: EInputMenuItemType.UShort) // Ввод будет ограничен числами от 0 до 65535
+    .AddMenuItem(
+        text: "Использовать SSL", 
+        defaultValue: "true", 
+        id: "use_ssl", 
+        type: EInputMenuItemType.Bool); // Ожидается ввод true/false
 ```
 Если `Id` не указан, он будет сгенерирован автоматически (начиная с "0").
 
 ### 2. Отображение и ввод данных
-Метод `Apply()` отображает все поля ввода и последовательно активирует их. Пользователь вводит данные в каждое поле, нажимая `Enter` для перехода к следующему. Нажатие `Escape` в любой момент отменит весь ввод и вернёт исходные значения.
+Метод `Apply()` отображает все поля ввода и управляет процессом:
+- Используйте **стрелки вверх/вниз** для перемещения между полями.
+- Редактируйте значение в выбранном поле. Клавиши **стрелки влево/вправо**, **Backspace**, **Delete** работают как в обычном текстовом редакторе.
+- Если текст в поле ввода занимает несколько строк, стрелки вверх/вниз сначала будут перемещать курсор внутри поля.
+- Нажмите **Enter**, чтобы подтвердить все введённые значения и завершить работу меню.
+- Нажмите **Escape**, чтобы отменить все изменения и выйти из меню.
 
 ```csharp
-// Отобразить меню и запустить процесс ввода
-inputMenu.Apply();
+// Отобразить меню и запустить процесс ввода. 
+// Метод вернёт словарь с результатами.
+var results = inputMenu.Apply();
 ```
 
 ### 3. Получение результатов
-После того как пользователь заполнил все поля (или отменил ввод), вы можете получить введённые значения несколькими способами.
+Метод `Apply()` возвращает `Dictionary<string, InputMenuItem>`. Ключ — это `Id` элемента, а значение — сам объект `InputMenuItem`, содержащий введённые данные. Это позволяет легко получить результат и безопасно преобразовать его к нужному типу.
 
 ```csharp
-// Способ 1: Получить словарь с результатами
-// Ключ - это ID, который вы задали, значение - введённая строка.
-Dictionary<string, string?> results = inputMenu.GetInputs();
-Console.WriteLine($"Подключаемся к {results["server_ip"]}:{results["port"]}");
+// Отображаем меню и получаем результаты
+Dictionary<string, InputMenuItem> results = inputMenu.Apply();
 
-// Способ 2: Обратиться напрямую к элементам меню
-// Это удобно для использования методов-помощников для парсинга.
-var portItem = inputMenu.MenuItems.First(item => item.Id == "port");
-if (portItem.TryGetInt(out int portNumber))
+// Способ 1: Получить значения по ID и использовать их как строки
+if (results.TryGetValue("server_ip", out var ipItem) && results.TryGetValue("port", out var portItem))
 {
-    Console.WriteLine($"Порт в числовом формате: {portNumber}");
+    Console.WriteLine($"Подключаемся к {ipItem.InputValue}:{portItem.InputValue}");
 }
-else
+
+// Способ 2: Использовать методы-помощники для безопасного преобразования типов
+if (results.TryGetValue("port", out var portItem))
 {
-    Console.WriteLine("Не удалось преобразовать порт в число.");
+    if (portItem.TryGetUShort(out ushort portNumber))
+    {
+        Console.WriteLine($"Порт в числовом формате: {portNumber}");
+    }
+    else
+    {
+        Console.WriteLine($"Не удалось преобразовать '{portItem.InputValue}' в число.");
+    }
 }
 ```
 
 ### 4. Настройка тем
-Как и `SelectMenu`, `InputMenu` поддерживает настройку тем для заголовка, активного (редактируемого) поля и неактивных полей.
+Как и `SelectMenu`, `InputMenu` поддерживает настройку тем через свойство `Theme`.
 
 ```csharp
-inputMenu.SetThemes(
-    title:      Themes.Templates.Blue,   // Тема для заголовка
-    selected:   Themes.Templates.Yellow, // Тема для активного поля ввода
-    unselected: Themes.Templates.Black   // Тема для остальных полей
-);
+// Способ 1: Применить готовую тему
+inputMenu.Theme = Themes.Cyan;
+
+// Способ 2: Создать и настроить свою тему
+var customTheme = Themes.Classic;
+customTheme.SelectedBackgroundColor = ConsoleColor.DarkBlue; // Цвет фона активного поля
+customTheme.SelectedTextColor = ConsoleColor.White;       // Цвет текста активного поля
+inputMenu.Theme = customTheme;
 ```
 
 ## Пример использования в коде
@@ -129,41 +163,54 @@ inputMenu.SetThemes(
 
 ```csharp
 using System;
-using System.Linq;
-
-// Предполагается, что 'global using ConsoleMenu;' находится в файле Usings.cs
+using System.Collections.Generic;
+using ConsoleMenu; // Убедитесь, что using добавлен
 
 public static class Program
 {
     // Хранилище "настроек" для примера
     private static string playerName = "User";
+    private static byte playerAge = 25;
     
     public static void Main()
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-        // Создаем меню для ввода имени игрока
-        var nameInputMenu = new InputMenu("Настройки игрока")
-            .AddMenuItem("Введите новое имя", playerName, "player_name");
+        // Создаем меню для ввода настроек
+        var settingsInputMenu = new InputMenu("Настройки игрока")
+            .AddMenuItem("Введите новое имя", playerName, "player_name")
+            .AddMenuItem("Введите возраст", playerAge.ToString(), "player_age", EInputMenuItemType.Byte);
+        settingsInputMenu.Theme = Themes.Yellow;
 
-        // Создаем меню настроек, которое может вызывать меню ввода
+        // Создаем меню настроек, которое вызывает меню ввода
         var settingsMenu = new SelectMenu("Настройки")
-            .AddMenuItem("Изменить имя игрока", () => 
+            .AddMenuItem("Изменить данные игрока", () => 
             {
-                nameInputMenu.Apply(); // Запускаем меню ввода
-                // После ввода обновляем нашу переменную
-                playerName = nameInputMenu.GetInputs()["player_name"] ?? playerName;
-                Console.WriteLine($"Имя изменено на: {playerName}");
+                // Запускаем меню ввода и получаем результат
+                Dictionary<string, InputMenuItem> results = settingsInputMenu.Apply(clear: true); 
+
+                // После ввода обновляем наши переменные
+                if (results.TryGetValue("player_name", out var nameItem) && !string.IsNullOrEmpty(nameItem.InputValue))
+                {
+                    playerName = nameItem.InputValue;
+                }
+                if (results.TryGetValue("player_age", out var ageItem) && ageItem.TryGetByte(out byte newAge))
+                {
+                    playerAge = newAge;
+                }
+                
+                Console.WriteLine($"\nНастройки обновлены. Имя: {playerName}, Возраст: {playerAge}");
                 Console.ReadKey();
             })
             .AddMenuItem("Назад");
+        settingsMenu.Theme = Themes.Cyan;
 
         // Создаем главное меню
         var mainMenu = new SelectMenu("Главное меню")
-            .SetThemes(Themes.Templates.Blue, Themes.Templates.Green, Themes.Templates.Black)
-            .AddMenuItem("Начать игру", () => Console.WriteLine($"Игра началась! Привет, {playerName}!"))
-            .AddMenuItem("Настройки", () => settingsMenu.Apply()) // Вложенное меню выбора
+            .AddMenuItem("Начать игру", () => Console.WriteLine($"Игра началась! Привет, {playerName}! Тебе {playerAge} лет."))
+            .AddMenuItem("Настройки", () => settingsMenu.Apply(clear: true)) // Вложенное меню выбора
             .AddMenuItem("Выход");
+        mainMenu.Theme = Themes.Blue;
             
         // Запускаем главный цикл меню
         while (true)
@@ -173,12 +220,14 @@ public static class Program
 
             if (mainMenu.MenuItems[choice].Text == "Выход")
             {
-                Environment.Exit(0);
+                break;
             }
             
             Console.WriteLine("\nНажмите любую клавишу для возврата в меню...");
             Console.ReadKey();
         }
+        Console.Clear();
+        Console.WriteLine("Программа завершена.");
     }
 }
 ```
