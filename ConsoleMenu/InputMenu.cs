@@ -15,7 +15,7 @@ public class InputMenu()
     /// <summary>Счётчик для генерации уникальных ID по умолчанию для новых элементов меню.<br/>Автоматически увеличивается при добавлении элементов без явного ID.</summary>
     private int nextDefaultId = 0;
 
-    /// <summary>Высота меню с учётом количества строк заголовка и количества элементов меню.</summary>
+    /// <summary>Кэшированное значение общей высоты меню в строках.<br/>Рассчитывается динамически в методе <see cref="Apply(bool)"/> и используется для корректной очистки области меню при перерисовке.</summary>
     private int menuHeight = 0;
     #endregion
 
@@ -46,12 +46,12 @@ public class InputMenu()
     #endregion
 
     #region Основная логика
-    /// <summary>Отображает меню, обрабатывает ввод пользователя по каждому полю и обновляет значения в <see cref="MenuItems"/>.<br/>Позволяет перемещаться между полями, редактировать значения, отменять ввод или подтверждать результат.</summary>
+    /// <summary>Отображает меню, обрабатывает ввод пользователя для каждого поля и возвращает итоговые значения.<br/>Управление в меню:<br/><list type="bullet"><item><description>Стрелки вверх/вниз: Перемещение между полями ввода. Если поле многострочное, сначала происходит навигация внутри него.</description></item><item><description>Стрелки влево/вправо, Backspace, Delete: Редактирование текста в выбранном поле.</description></item><item><description>Enter: Подтверждение всех введённых значений и выход из меню.</description></item><item><description>Escape: Отмена всех изменений (возврат к начальным значениям) и выход из меню.</description></item></list></summary>
     /// <param name="clear">Если <c>true</c>, очищает консоль перед отображением меню; если <c>false</c>, меню рисуется с текущей позиции курсора.</param>
     /// <returns>Словарь, где ключ — <see cref="InputMenuItem.Id"/>, а значение — соответствующий элемент <see cref="InputMenuItem"/> с обновлённым вводом пользователя.</returns>
     public Dictionary<string, InputMenuItem> Apply(bool clear = false)
     {
-        List<string?> initialValues = [.. MenuItems.Select(item => item.InputValue)];
+        List<string> initialValues = [.. MenuItems.Select(item => item.InputValue)];
         int selected = 0;
         int oldHeight;
         if (clear) Console.Clear();
@@ -118,9 +118,9 @@ public class InputMenu()
             List<string> promptLines = promptLinesList[selected];
             StringBuilder inputBuilder = new(currentItem.InputValue ?? string.Empty);
 
-            RenderManager.SetCursorVisibility(currentItem.Type != EInputMenuItemType.Bool);
+            RenderManager.SetCursorVisibility(currentItem.Type is not EInputMenuItemType.Bool);
 
-            if (currentItem.Type != EInputMenuItemType.Bool)
+            if (currentItem.Type is not EInputMenuItemType.Bool)
             {
                 if (cursorPos > inputBuilder.Length)
                     cursorPos = inputBuilder.Length;
@@ -138,7 +138,7 @@ public class InputMenu()
 
                 if (keyInfo.Key is ConsoleKey.UpArrow)
                 {
-                    if (currentItem.Type == EInputMenuItemType.Bool)
+                    if (currentItem.Type is EInputMenuItemType.Bool)
                     {
                         selected = (selected - 1 + MenuItems.Count) % MenuItems.Count;
                         breakInnerLoop = true;
@@ -153,7 +153,7 @@ public class InputMenu()
                             while (p <= currentValue.Length)
                             {
                                 CursorPosition pos = RenderManager.GetCursorLineCol(currentValue, p, promptLen, RenderManager.WindowWidth);
-                                int screenCol = pos.Column + (pos.Line == 0 ? promptLen : 0);
+                                int screenCol = pos.Column + (pos.Line is 0 ? promptLen : 0);
                                 if (pos.Line == targetLine && screenCol >= savedHorizontalColumn) break;
                                 if (pos.Line > targetLine) break;
                                 p++;
@@ -172,7 +172,7 @@ public class InputMenu()
                             while (p <= prevValue.Length)
                             {
                                 CursorPosition pos = RenderManager.GetCursorLineCol(prevValue, p, prevPromptLen, RenderManager.WindowWidth);
-                                int screenCol = pos.Column + (pos.Line == 0 ? prevPromptLen : 0);
+                                int screenCol = pos.Column + (pos.Line is 0 ? prevPromptLen : 0);
                                 if (pos.Line == lastLinePos.Line && screenCol >= savedHorizontalColumn) break;
                                 if (pos.Line > lastLinePos.Line) break;
                                 p++;
@@ -185,7 +185,7 @@ public class InputMenu()
                 }
                 else if (keyInfo.Key is ConsoleKey.DownArrow)
                 {
-                    if (currentItem.Type == EInputMenuItemType.Bool)
+                    if (currentItem.Type is EInputMenuItemType.Bool)
                     {
                         selected = (selected + 1) % MenuItems.Count;
                         breakInnerLoop = true;
@@ -201,7 +201,7 @@ public class InputMenu()
                             while (p <= currentValue.Length)
                             {
                                 CursorPosition pos = RenderManager.GetCursorLineCol(currentValue, p, promptLen, RenderManager.WindowWidth);
-                                int screenCol = pos.Column + (pos.Line == 0 ? promptLen : 0);
+                                int screenCol = pos.Column + (pos.Line is 0 ? promptLen : 0);
                                 if (pos.Line == targetLine && screenCol >= savedHorizontalColumn) break;
                                 if (pos.Line > targetLine) break;
                                 p++;
@@ -219,8 +219,8 @@ public class InputMenu()
                             while (p <= nextValue.Length)
                             {
                                 CursorPosition pos = RenderManager.GetCursorLineCol(nextValue, p, nextPromptLen, RenderManager.WindowWidth);
-                                int screenCol = pos.Column + (pos.Line == 0 ? nextPromptLen : 0);
-                                if (pos.Line == 0 && screenCol >= savedHorizontalColumn) break;
+                                int screenCol = pos.Column + (pos.Line is 0 ? nextPromptLen : 0);
+                                if (pos.Line is 0 && screenCol >= savedHorizontalColumn) break;
                                 if (pos.Line > 0) break;
                                 p++;
                             }
@@ -236,18 +236,18 @@ public class InputMenu()
                         MenuItems[j].InputValue = initialValues[j];
                     RenderManager.SetCursorVisibility(false);
                     ClearMenuArea();
-                    return MenuItems.ToDictionary(item => item.Id, item => item);
+                    return MenuItems.ToDictionary(item => item.Id ?? throw new ArgumentException("По каким-то причинам Id оказался не задан"), item => item);
                 }
                 else if (keyInfo.Key is ConsoleKey.Enter)
                 {
                     MenuItems[selected].InputValue = inputBuilder.ToString();
                     RenderManager.SetCursorVisibility(false);
                     ClearMenuArea();
-                    return MenuItems.ToDictionary(item => item.Id, item => item);
+                    return MenuItems.ToDictionary(item => item.Id ?? throw new ArgumentException("По каким-то причинам Id оказался не задан"), item => item);
                 }
                 else if (keyInfo.Key is ConsoleKey.Backspace)
                 {
-                    if (currentItem.Type != EInputMenuItemType.Bool && cursorPos > 0)
+                    if (currentItem.Type is not EInputMenuItemType.Bool && cursorPos > 0)
                     {
                         _ = inputBuilder.Remove(cursorPos - 1, 1);
                         cursorPos--;
@@ -256,7 +256,7 @@ public class InputMenu()
                 }
                 else if (keyInfo.Key is ConsoleKey.Delete)
                 {
-                    if (currentItem.Type != EInputMenuItemType.Bool && cursorPos < inputBuilder.Length)
+                    if (currentItem.Type is not EInputMenuItemType.Bool && cursorPos < inputBuilder.Length)
                     {
                         _ = inputBuilder.Remove(cursorPos, 1);
                         MenuItems[selected].InputValue = inputBuilder.ToString();
@@ -621,7 +621,7 @@ public class InputMenu()
                 if (menuHeight < oldHeight)
                     RenderManager.ClearArea(menuTop + menuHeight, oldHeight - menuHeight, RenderManager.WindowWidth);
 
-                if (currentItem.Type != EInputMenuItemType.Bool)
+                if (currentItem.Type is not EInputMenuItemType.Bool)
                     savedHorizontalColumn = RenderManager.UpdateCursorPosition(inputBuilder.ToString(), cursorPos, promptLines, GetMenuItemTop(selected), RenderManager.WindowWidth);
 
                 if (breakInnerLoop)
@@ -656,6 +656,7 @@ public class InputMenu()
     #region Строитель
     /// <summary>Добавляет готовый элемент меню, проверяя уникальность его идентификатора.<br/>Если идентификатор не указан, он будет сгенерирован автоматически.</summary>
     /// <param name="item">Экземпляр <see cref="InputMenuItem"/> для добавления.</param>
+    /// <param name="id">Необязательный идентификатор, который будет присвоен элементу, переопределяя существующий в <paramref name="item"/>.</param>
     /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
     /// <exception cref="ArgumentException">Выбрасывается, если элемент с таким идентификатором уже существует в меню.</exception>
     internal InputMenu AddMenuItem(InputMenuItem item, string? id = null)
@@ -762,10 +763,10 @@ public class InputMenu()
         return this;
     }
 
-    /// <summary>Устанавливает темы для данного меню.<br/>Позволяет задать отдельные темы для заголовка, активного (редактируемого) поля и неактивных полей.</summary>
-    /// <param name="title">Тема для заголовка меню.</param>
-    /// <param name="selected">Тема для активного (выделенного) поля ввода.</param>
-    /// <param name="unselected">Тема для остальных (невыделенных) полей.</param>
+    /// <summary>Устанавливает цвета для меню, копируя их из предоставленных тем.<br/>Позволяет настроить оформление заголовка, выделенного и невыделенных полей.</summary>
+    /// <param name="title">Тема-источник для цветов заголовка (<see cref="Theme.TitleTextColor"/>, <see cref="Theme.TitleBackgroundColor"/>).</param>
+    /// <param name="selected">Тема-источник для цветов выделенного поля (<see cref="Theme.SelectedTextColor"/>, <see cref="Theme.SelectedBackgroundColor"/>).</param>
+    /// <param name="unselected">Тема-источник для цветов невыделенного поля (<see cref="Theme.UnselectedTextColor"/>, <see cref="Theme.UnselectedBackgroundColor"/>).</param>
     /// <returns>Текущий экземпляр <see cref="InputMenu"/> с обновлёнными темами.</returns>
     public InputMenu SetThemes(Theme title, Theme selected, Theme unselected)
     {
