@@ -41,209 +41,6 @@ public class InputMenu()
     #endregion
 
     #region Основная логика
-    /// <summary>Разбивает текст на строки по ширине окна консоли, перенося по словам и разбивая слишком длинные слова.</summary>
-    /// <param name="text">Исходная строка, которую требуется разбить на несколько строк.</param>
-    /// <param name="maxWidth">Максимальная ширина строки (обычно ширина окна консоли).</param>
-    /// <returns>Список строк, каждая из которых не превышает указанную ширину.</returns>
-    private static List<string> WrapText(string text, int maxWidth)
-    {
-        List<string> lines = [];
-        string[] words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        StringBuilder currentLine = new();
-
-        foreach (string word in words)
-        {
-            // Если слово не помещается в текущую строку
-            if (currentLine.Length > 0)
-            {
-                if (currentLine.Length + 1 + word.Length > maxWidth)
-                {
-                    lines.Add(currentLine.ToString());
-                    _ = currentLine.Clear();
-                }
-                else
-                {
-                    _ = currentLine.Append(' ');
-                }
-            }
-            // Если слово длиннее maxWidth, разбиваем его
-            int wordPos = 0;
-            while (word.Length - wordPos > maxWidth)
-            {
-                if (currentLine.Length > 0)
-                {
-                    lines.Add(currentLine.ToString());
-                    _ = currentLine.Clear();
-                }
-                lines.Add(word.Substring(wordPos, maxWidth));
-                wordPos += maxWidth;
-            }
-            if (wordPos < word.Length)
-            {
-                _ = currentLine.Append(word[wordPos..]);
-            }
-        }
-        if (currentLine.Length > 0)
-            lines.Add(currentLine.ToString());
-        return lines;
-    }
-
-    /// <summary>Разбивает строку на список "токенов", где каждый токен - это либо слово, либо последовательность пробелов.</summary>
-    /// <param name="text">Входная строка.</param>
-    /// <returns>Список токенов.</returns>
-    private static List<string> Tokenize(string text)
-    {
-        var tokens = new List<string>();
-        if (string.IsNullOrEmpty(text)) return tokens;
-
-        int pos = 0;
-        while (pos < text.Length)
-        {
-            int start = pos;
-            bool isSpace = char.IsWhiteSpace(text[start]);
-            while (pos < text.Length && char.IsWhiteSpace(text[pos]) == isSpace)
-            {
-                pos++;
-            }
-            tokens.Add(text.Substring(start, pos - start));
-        }
-        return tokens;
-    }
-
-    /// <summary>Разбивает значение на строки для отображения, учитывая длину prompt в первой строке и перенося по словам.</summary>
-    private static List<string> WrapInputValue(string value, int promptLen, int maxWidth)
-    {
-        var lines = new List<string>();
-        if (string.IsNullOrEmpty(value))
-        {
-            lines.Add("");
-            return lines;
-        }
-
-        var tokens = Tokenize(value);
-        var currentLine = new StringBuilder();
-        int currentWidth = maxWidth - promptLen;
-
-        foreach (var token in tokens)
-        {
-            // Если токен не помещается на текущей строке (и строка не пуста)
-            if (currentLine.Length > 0 && currentLine.Length + token.Length > currentWidth)
-            {
-                lines.Add(currentLine.ToString());
-                currentLine.Clear();
-                currentWidth = maxWidth; // Новая строка имеет полную ширину
-            }
-
-            // Если токен сам по себе длиннее строки, разбиваем его
-            if (token.Length > currentWidth)
-            {
-                int tokenPos = 0;
-                while (tokenPos < token.Length)
-                {
-                    int take = Math.Min(currentWidth, token.Length - tokenPos);
-                    lines.Add(token.Substring(tokenPos, take));
-                    tokenPos += take;
-                }
-            }
-            else
-            {
-                currentLine.Append(token);
-            }
-        }
-
-        if (currentLine.Length > 0)
-        {
-            lines.Add(currentLine.ToString());
-        }
-
-        if (lines.Count == 0)
-        {
-            lines.Add("");
-        }
-
-        return lines;
-    }
-
-    /// <summary>Вычисляет строку и столбец курсора для многострочного значения, используя ту же логику переноса по словам, что и WrapInputValue.</summary>
-    /// <param name="value">Текущее значение поля ввода.</param>
-    /// <param name="cursorPos">Позиция курсора в строке.</param>
-    /// <param name="promptLen">Длина текста prompt.</param>
-    /// <param name="maxWidth">Максимальная ширина строки.</param>
-    /// <returns>Кортеж, содержащий строку и столбец курсора.</returns>
-    private static (int line, int col) GetCursorLineCol(string value, int cursorPos, int promptLen, int maxWidth)
-    {
-        if (cursorPos <= 0)
-            return (0, 0);
-
-        var tokens = Tokenize(value);
-
-        int line = 0;
-        int col = 0;
-        int absolutePos = 0;
-        int currentWidth = maxWidth - promptLen;
-
-        foreach (var token in tokens)
-        {
-            // Если курсор находится внутри этого токена
-            if (cursorPos <= absolutePos + token.Length)
-            {
-                int localPos = cursorPos - absolutePos; // Позиция внутри токена
-
-                // Проверяем, перенесся бы этот токен на новую строку
-                if (col > 0 && col + token.Length > currentWidth)
-                {
-                    line++;
-                    col = 0;
-                    currentWidth = maxWidth;
-                }
-
-                // Если токен длиннее строки, вычисляем позицию внутри разбитого токена
-                if (token.Length > currentWidth)
-                {
-                    line += localPos / currentWidth;
-                    col = localPos % currentWidth;
-                }
-                else // Иначе просто добавляем смещение
-                {
-                    col += localPos;
-                }
-
-                return (line, col);
-            }
-
-            // Если курсор дальше, полностью "размещаем" токен и обновляем позицию
-            // Проверяем, нужен ли перенос перед размещением токена
-            if (col > 0 && col + token.Length > currentWidth)
-            {
-                line++;
-                col = 0;
-                currentWidth = maxWidth;
-            }
-
-            // Если токен длиннее строки, он займет несколько строк
-            if (token.Length > currentWidth)
-            {
-                line += (token.Length - 1) / currentWidth;
-                col = token.Length % currentWidth;
-                if (col == 0 && token.Length > 0)
-                {
-                    // Если он закончился ровно на границе, курсор на след. строке в 0
-                    col = currentWidth;
-                    line--; // Компенсируем лишний инкремент строки
-                }
-            }
-            else
-            {
-                col += token.Length;
-            }
-
-            absolutePos += token.Length;
-        }
-
-        // Если курсор в самом конце
-        return (line, col);
-    }
-
     /// <summary>Отображает меню, обрабатывает ввод пользователя по каждому полю и обновляет значения в <see cref="MenuItems"/>.<br/>Позволяет перемещаться между полями, редактировать значения, отменять ввод или подтверждать результат.</summary>
     /// <param name="clear">Если <c>true</c>, очищает консоль перед отображением меню; если <c>false</c>, меню рисуется с текущей позиции курсора.</param>
     /// <returns>Словарь, где ключ — <see cref="InputMenuItem.Id"/>, а значение — соответствующий элемент <see cref="InputMenuItem"/> с обновлённым вводом пользователя.</returns>
@@ -254,54 +51,36 @@ public class InputMenu()
         if (clear) Console.Clear();
 
         int menuTop = Console.CursorTop;
-        Console.CursorVisible = true;
+        RenderManager.SetCursorVisibility(true);
 
-        int lineWidth = Console.WindowWidth > 1 ? Console.WindowWidth - 1 : 64;
-        // --- Переносим заголовок по словам ---
-        List<string> titleLines = WrapText(Title, lineWidth);
+        List<string> titleLines = RenderManager.WrapText(Title, RenderManager.WindowWidth);
 
-        // --- Переносим текст каждого prompt в элементе меню ---
         List<List<string>> promptLinesList = [.. MenuItems
             .Select(item =>
             {
-                List<string> lines = WrapText(item.Text, lineWidth - 2);
-                if (lines.Count == 0) lines.Add("");
+                List<string> lines = RenderManager.WrapText(item.Text, RenderManager.WindowWidth - 2);
+                if (lines.Count is 0) lines.Add(string.Empty);
                 return lines;
             })];
 
-        // --- Сохраняем высоту меню ---
         menuHeight = titleLines.Count + promptLinesList.Sum(l => l.Count);
 
-        // --- Отрисовка заголовка ---
-        Console.ForegroundColor = Theme.TitleTextColor;
-        Console.BackgroundColor = Theme.TitleBackgroundColor;
-        Console.SetCursorPosition(0, menuTop);
-        foreach (string line in titleLines)
-            Console.WriteLine(line.PadRight(lineWidth));
+        RenderManager.DrawTitle(titleLines, Theme, menuTop, RenderManager.WindowWidth);
 
         void ClearMenuArea()
         {
-            string cleaner = new(' ', lineWidth);
-            for (int i = 0; i < menuHeight; i++)
-            {
-                Console.SetCursorPosition(0, menuTop + i);
-                Console.Write(cleaner);
-            }
-            Console.SetCursorPosition(0, menuTop);
-            Console.ResetColor();
+            RenderManager.ClearArea(menuTop, menuHeight, RenderManager.WindowWidth);
+            RenderManager.ResetColor();
         }
 
-        // --- Новый метод для вычисления высоты элемента меню с учётом многострочного значения ---
         int GetMenuItemHeight(int index)
         {
-            var promptLines = promptLinesList[index];
-            var value = MenuItems[index].InputValue ?? "";
-            var valueLines = WrapInputValue(value, promptLines[^1].Length + 2, lineWidth); // +2 для ": "
-            // promptLines.Count - 1 строк без значения, последняя строка prompt + valueLines.Count
+            List<string> promptLines = promptLinesList[index];
+            string value = MenuItems[index].InputValue ?? string.Empty;
+            List<string> valueLines = RenderManager.WrapInputValue(value, promptLines[^1].Length + 2, RenderManager.WindowWidth);
             return (promptLines.Count - 1) + valueLines.Count;
         }
 
-        // --- Новый метод для вычисления смещения по вертикали для i-го элемента ---
         int GetMenuItemTop(int index)
         {
             int offset = titleLines.Count;
@@ -310,83 +89,14 @@ public class InputMenu()
             return menuTop + offset;
         }
 
-        void DrawMenuLine(int i, bool isSelected)
-        {
-            int itemTop = GetMenuItemTop(i);
-            InputMenuItem item = MenuItems[i];
-            string value = item.InputValue ?? "";
-            List<string> promptLines = promptLinesList[i];
-
-            for (int lineIdx = 0; lineIdx < promptLines.Count; lineIdx++)
-            {
-                Console.SetCursorPosition(0, itemTop + lineIdx);
-
-                bool isLastPromptLine = (lineIdx == promptLines.Count - 1);
-                string prompt = isLastPromptLine ? promptLines[lineIdx] + ": " : promptLines[lineIdx];
-
-                if (isSelected)
-                {
-                    Console.BackgroundColor = Theme.SelectedBackgroundColor;
-                    Console.ForegroundColor = Theme.SelectedTextColor;
-                    if (isLastPromptLine)
-                    {
-                        var valueLines = WrapInputValue(value, prompt.Length, lineWidth);
-                        for (int v = 0; v < valueLines.Count; v++)
-                        {
-                            int y = itemTop + lineIdx + v;
-                            Console.SetCursorPosition(0, y);
-                            if (v == 0)
-                            {
-                                // Сначала prompt, затем значение
-                                string line = prompt + valueLines[0];
-                                Console.Write(line.PadRight(lineWidth));
-                            }
-                            else
-                            {
-                                Console.Write(valueLines[v].PadRight(lineWidth));
-                            }
-                        }
-                    }
-                    else Console.Write(prompt.PadRight(lineWidth));
-                }
-                else
-                {
-                    Console.BackgroundColor = Theme.UnselectedBackgroundColor;
-                    Console.ForegroundColor = Theme.FieldTextColor;
-                    if (isLastPromptLine)
-                    {
-                        var valueLines = WrapInputValue(value, prompt.Length, lineWidth);
-                        for (int v = 0; v < valueLines.Count; v++)
-                        {
-                            int y = itemTop + lineIdx + v;
-                            Console.SetCursorPosition(0, y);
-                            if (v == 0)
-                            {
-                                string line = prompt + valueLines[0];
-                                int promptLen = Math.Min(prompt.Length, lineWidth);
-                                Console.Write(line.PadRight(lineWidth));
-                            }
-                            else
-                            {
-                                Console.Write(valueLines[v].PadRight(lineWidth));
-                            }
-                        }
-                    }
-                    else Console.Write(prompt.PadRight(lineWidth));
-                }
-                Console.ResetColor();
-            }
-        }
-
         void Redraw()
         {
-            // Пересчитываем menuHeight с учётом многострочных значений
             menuHeight = titleLines.Count;
             for (int i = 0; i < MenuItems.Count; i++)
                 menuHeight += GetMenuItemHeight(i);
 
             for (int i = 0; i < MenuItems.Count; i++)
-                DrawMenuLine(i, i == selected);
+                RenderManager.DrawInputMenuItem(MenuItems[i], i == selected, promptLinesList[i], Theme, GetMenuItemTop(i), RenderManager.WindowWidth);
         }
 
         Redraw();
@@ -395,7 +105,6 @@ public class InputMenu()
         int inputTop = 0;
         int cursorPos = 0;
 
-        // --- Устанавливаем каретку в конец первого поля при запуске меню ---
         if (MenuItems.Count > 0)
             cursorPos = (MenuItems[0].InputValue ?? string.Empty).Length;
 
@@ -406,16 +115,14 @@ public class InputMenu()
             string prompt = promptLines[^1] + ": ";
             StringBuilder inputBuilder = new(currentItem.InputValue ?? string.Empty);
             inputLeft = prompt.Length;
-            // --- Корректируем позицию курсора с учётом высоты заголовка и многострочности prompt ---
             inputTop = GetMenuItemTop(selected) + promptLines.Count - 1;
 
-            // --- Корректируем позицию курсора, если поле короче ---
             if (cursorPos > inputBuilder.Length)
                 cursorPos = inputBuilder.Length;
 
-            var (cursorLine, cursorCol) = GetCursorLineCol(inputBuilder.ToString(), cursorPos, inputLeft, lineWidth);
-            Console.SetCursorPosition((cursorLine == 0 ? inputLeft : 0) + cursorCol, inputTop + cursorLine);
-            Console.CursorVisible = true;
+            (int cursorLine, int cursorCol) = RenderManager.GetCursorLineCol(inputBuilder.ToString(), cursorPos, inputLeft, RenderManager.WindowWidth);
+            RenderManager.SetCursorPosition((cursorLine is 0 ? inputLeft : 0) + cursorCol, inputTop + cursorLine);
+            RenderManager.SetCursorVisibility(true);
 
             while (true)
             {
@@ -423,35 +130,35 @@ public class InputMenu()
 
                 bool breakInnerLoop = false;
 
-                if (keyInfo.Key == ConsoleKey.UpArrow)
+                if (keyInfo.Key is ConsoleKey.UpArrow)
                 {
                     MenuItems[selected].InputValue = inputBuilder.ToString();
                     selected = (selected - 1 + MenuItems.Count) % MenuItems.Count;
                     breakInnerLoop = true;
                 }
-                else if (keyInfo.Key == ConsoleKey.DownArrow)
+                else if (keyInfo.Key is ConsoleKey.DownArrow)
                 {
                     MenuItems[selected].InputValue = inputBuilder.ToString();
                     selected = (selected + 1) % MenuItems.Count;
                     breakInnerLoop = true;
                 }
-                else if (keyInfo.Key == ConsoleKey.Escape)
+                else if (keyInfo.Key is ConsoleKey.Escape)
                 {
                     for (int j = 0; j < MenuItems.Count; j++)
                         MenuItems[j].InputValue = initialValues[j];
-                    Console.CursorVisible = false;
+                    RenderManager.SetCursorVisibility(false);
                     ClearMenuArea();
                     return MenuItems.ToDictionary(item => item.Id, item => item);
                 }
-                else if (keyInfo.Key == ConsoleKey.Enter)
+                else if (keyInfo.Key is ConsoleKey.Enter)
                 {
                     string input = inputBuilder.ToString();
                     MenuItems[selected].InputValue = input;
-                    Console.CursorVisible = false;
+                    RenderManager.SetCursorVisibility(false);
                     ClearMenuArea();
                     return MenuItems.ToDictionary(item => item.Id, item => item);
                 }
-                else if (keyInfo.Key == ConsoleKey.Backspace)
+                else if (keyInfo.Key is ConsoleKey.Backspace)
                 {
                     if (cursorPos > 0)
                     {
@@ -460,7 +167,7 @@ public class InputMenu()
                         MenuItems[selected].InputValue = inputBuilder.ToString();
                     }
                 }
-                else if (keyInfo.Key == ConsoleKey.Delete)
+                else if (keyInfo.Key is ConsoleKey.Delete)
                 {
                     if (cursorPos < inputBuilder.Length)
                     {
@@ -468,20 +175,18 @@ public class InputMenu()
                         MenuItems[selected].InputValue = inputBuilder.ToString();
                     }
                 }
-                else if (keyInfo.Key == ConsoleKey.LeftArrow)
+                else if (keyInfo.Key is ConsoleKey.LeftArrow)
                 {
                     if (cursorPos > 0)
                         cursorPos--;
                 }
-                else if (keyInfo.Key == ConsoleKey.RightArrow)
+                else if (keyInfo.Key is ConsoleKey.RightArrow)
                 {
                     if (cursorPos < inputBuilder.Length)
                         cursorPos++;
                 }
                 else if (!char.IsControl(keyInfo.KeyChar))
                 {
-                    // --- ДО switch (currentItem.Type) ---
-                    // Особая обработка для минуса в начале строки для знаковых типов
                     bool minusInserted = false;
                     if ((currentItem.Type is EInputMenuItemType.Int or EInputMenuItemType.Short or EInputMenuItemType.SByte
                         or EInputMenuItemType.Float or EInputMenuItemType.Double or EInputMenuItemType.Decimal)
@@ -498,13 +203,11 @@ public class InputMenu()
                     {
                         MenuItems[selected].InputValue = inputBuilder.ToString();
                         Redraw();
-                        // --- Корректно вычисляем позицию курсора ---
-                        var (line, col) = GetCursorLineCol(inputBuilder.ToString(), cursorPos, inputLeft, lineWidth);
-                        Console.SetCursorPosition((line == 0 ? inputLeft : 0) + col, inputTop + line);
-                        continue; // пропускаем остальную обработку, т.к. уже всё сделали
+                        (int line, int col) = RenderManager.GetCursorLineCol(inputBuilder.ToString(), cursorPos, inputLeft, RenderManager.WindowWidth);
+                        RenderManager.SetCursorPosition((line is 0 ? inputLeft : 0) + col, inputTop + line);
+                        continue;
                     }
 
-                    // --- далее обычная логика allowInput ---
                     bool allowInput = false;
                     switch (currentItem.Type)
                     {
@@ -516,7 +219,7 @@ public class InputMenu()
                         case EInputMenuItemType.SByte:
                             if (char.IsDigit(keyInfo.KeyChar))
                                 allowInput = true;
-                            else if (keyInfo.KeyChar == '-' && cursorPos == 0 && !inputBuilder.ToString().Contains('-'))
+                            else if (keyInfo.KeyChar is '-' && cursorPos is 0 && !inputBuilder.ToString().Contains('-'))
                                 allowInput = true;
                             break;
                         case EInputMenuItemType.UInt:
@@ -530,13 +233,12 @@ public class InputMenu()
                         case EInputMenuItemType.Decimal:
                             if (char.IsDigit(keyInfo.KeyChar))
                                 allowInput = true;
-                            else if (keyInfo.KeyChar == '-' && cursorPos == 0 && !inputBuilder.ToString().Contains('-'))
+                            else if (keyInfo.KeyChar is '-' && cursorPos is 0 && !inputBuilder.ToString().Contains('-'))
                                 allowInput = true;
-                            else if ((keyInfo.KeyChar == '.' || keyInfo.KeyChar == ',') &&
+                            else if ((keyInfo.KeyChar is '.' or ',') &&
                                      !inputBuilder.ToString().Contains('.') && !inputBuilder.ToString().Contains(','))
                             {
-                                // Блокируем ввод точки, если значащих цифр уже максимум
-                                string digitsOnly = inputBuilder.ToString().Replace("-", "").Replace(".", "").Replace(",", "");
+                                string digitsOnly = inputBuilder.ToString().Replace("-", string.Empty).Replace(".", string.Empty).Replace(",", string.Empty);
                                 int maxSignificant = GetSignificantLimit(currentItem.Type);
                                 allowInput = digitsOnly.Length < maxSignificant;
                             }
@@ -548,7 +250,6 @@ public class InputMenu()
 
                     if (allowInput)
                     {
-                        // --- Ограничение количества знаков после точки для дробных типов ---
                         if (currentItem.Type is EInputMenuItemType.Float or EInputMenuItemType.Double or EInputMenuItemType.Decimal
                             && char.IsDigit(keyInfo.KeyChar))
                         {
@@ -556,20 +257,17 @@ public class InputMenu()
                             int dotIdx = text.IndexOfAny(['.', ',']);
                             int intPartLen = (dotIdx >= 0 ? dotIdx : text.Length);
 
-                            // Ограничения для decimal: максимум 29 знаков (28 дробных + 1 целая, но реально 28-29 знаков)
                             int maxDigits = GetSignificantLimit(currentItem.Type);
 
-                            // Проверяем длину целой части (без минуса)
                             intPartLen = text.StartsWith("-") ? intPartLen - 1 : intPartLen;
-                            if (dotIdx == -1 && text.StartsWith("-"))
+                            if (dotIdx is -1 && text.StartsWith("-"))
                                 intPartLen = text.Length - 1;
 
                             if (intPartLen >= maxDigits && cursorPos <= intPartLen)
-                                continue; // Не даём ввести больше цифр в целой части
+                                continue;
 
                             int limit = GetFractionLimit(currentItem.Type);
                             int fractionLen = text.Length - dotIdx - 1;
-                            // учесть вставку в конец или в середину дробной части
                             if (cursorPos == text.Length)
                                 fractionLen++;
                             else if (cursorPos > dotIdx)
@@ -580,17 +278,13 @@ public class InputMenu()
 
                             int maxSignificant = GetSignificantLimit(currentItem.Type);
 
-                            // Считаем количество значащих цифр (без минуса и точки)
-                            string digitsOnly = text.Replace("-", "").Replace(".", "").Replace(",", "");
+                            string digitsOnly = text.Replace("-", string.Empty).Replace(".", string.Empty).Replace(",", string.Empty);
                             int significantCount = digitsOnly.Length;
 
-                            // Если курсор в целой части и значащих цифр уже максимум
-                            if ((dotIdx == -1 || cursorPos <= dotIdx) && significantCount >= maxSignificant)
+                            if ((dotIdx is -1 || cursorPos <= dotIdx) && significantCount >= maxSignificant)
                             {
-                                // Если есть дробная часть — удаляем последнюю цифру дробной части
                                 if (dotIdx >= 0 && text.Length > dotIdx + 1)
                                 {
-                                    // Удаляем последнюю цифру дробной части
                                     int lastDigitIdx = text.Length - 1;
                                     while (lastDigitIdx > dotIdx && !char.IsDigit(text[lastDigitIdx]))
                                         lastDigitIdx--;
@@ -600,7 +294,6 @@ public class InputMenu()
                                         if (cursorPos > lastDigitIdx) cursorPos--;
                                     }
 
-                                    // Если после удаления дробной части осталась только точка — удаляем её
                                     string newText = inputBuilder.ToString();
                                     int newDotIdx = newText.IndexOfAny(['.', ',']);
                                     if (newDotIdx >= 0 && newDotIdx == newText.Length - 1)
@@ -611,24 +304,20 @@ public class InputMenu()
                                 }
                                 else
                                 {
-                                    // Если дробной части нет — не даём ввести больше
                                     continue;
                                 }
                             }
 
-                            // Если значащих цифр уже максимум — не даём вводить новые цифры после точки
                             if (dotIdx >= 0 && cursorPos > dotIdx && significantCount >= maxSignificant)
                                 continue;
                         }
 
-                        // Особая обработка для минуса в начале строки для знаковых типов
                         minusInserted = false;
                         if ((currentItem.Type is
                             EInputMenuItemType.Int or EInputMenuItemType.Short or EInputMenuItemType.SByte or
                             EInputMenuItemType.Float or EInputMenuItemType.Double or EInputMenuItemType.Decimal)
                             && keyInfo.KeyChar is '-')
                         {
-                            // Если строка "0" и курсор в начале или после "0" или на пустой строке — устанавливаем строку в "-"
                             if (inputBuilder.ToString() is "0" or "" && cursorPos is 0 or 1)
                             {
                                 _ = inputBuilder.Clear();
@@ -640,17 +329,17 @@ public class InputMenu()
 
                         if (!minusInserted)
                         {
-                            var valLines = WrapInputValue(inputBuilder.ToString().Insert(cursorPos, keyInfo.KeyChar.ToString()), inputLeft, lineWidth);
+                            List<string> valLines = RenderManager.WrapInputValue(inputBuilder.ToString().Insert(cursorPos, keyInfo.KeyChar.ToString()), inputLeft, RenderManager.WindowWidth);
                             if (valLines.Count + inputTop >= Console.BufferHeight)
-                                continue; // Не даём выйти за пределы буфера по высоте
-                            if (valLines.Any(l => l.Length > lineWidth))
-                                continue; // Не даём выйти за пределы по ширине
+                                continue;
+                            if (valLines.Any(l => l.Length > RenderManager.WindowWidth))
+                                continue;
 
                             _ = inputBuilder.Insert(cursorPos, keyInfo.KeyChar);
                             cursorPos++;
                         }
 
-                        string val, numberPart;
+                        string val;
                         bool isNegative, parsed;
                         int oldLength;
                         switch (currentItem.Type)
@@ -660,14 +349,13 @@ public class InputMenu()
                             case EInputMenuItemType.SByte:
                                 {
                                     val = inputBuilder.ToString();
-                                    // Если только "-", не трогаем строку
-                                    if (val == "-")
+                                    if (val is "-")
                                         break;
                                     isNegative = val.StartsWith("-");
-                                    numberPart = val[(isNegative ? 1 : 0)..].TrimStart('0');
+                                    string numberPart = val[(isNegative ? 1 : 0)..].TrimStart('0');
                                     if (numberPart is "" or "0")
                                         numberPart = "0";
-                                    val = isNegative ? (numberPart == "0" ? "-0" : "-" + numberPart) : numberPart;
+                                    val = isNegative ? (numberPart is "0" ? "-0" : "-" + numberPart) : numberPart;
 
                                     if (BigInteger.TryParse(val, out BigInteger bigVal))
                                     {
@@ -677,25 +365,24 @@ public class InputMenu()
                                                 if (bigVal < int.MinValue) bigVal = int.MinValue;
                                                 if (bigVal > int.MaxValue) bigVal = int.MaxValue;
                                                 val = ((int)bigVal).ToString();
-                                                if (isNegative && numberPart == "0") val = "-0";
+                                                if (isNegative && numberPart is "0") val = "-0";
                                                 break;
                                             case EInputMenuItemType.Short:
                                                 if (bigVal < short.MinValue) bigVal = short.MinValue;
                                                 if (bigVal > short.MaxValue) bigVal = short.MaxValue;
                                                 val = ((short)bigVal).ToString();
-                                                if (isNegative && numberPart == "0") val = "-0";
+                                                if (isNegative && numberPart is "0") val = "-0";
                                                 break;
                                             case EInputMenuItemType.SByte:
                                                 if (bigVal < sbyte.MinValue) bigVal = sbyte.MinValue;
                                                 if (bigVal > sbyte.MaxValue) bigVal = sbyte.MaxValue;
                                                 val = ((sbyte)bigVal).ToString();
-                                                if (isNegative && numberPart == "0") val = "-0";
+                                                if (isNegative && numberPart is "0") val = "-0";
                                                 break;
                                         }
                                     }
 
-                                    // Если только "-", не трогаем строку и позицию курсора
-                                    if (inputBuilder.ToString() == "-")
+                                    if (inputBuilder.ToString() is "-")
                                         break;
 
                                     int oldCursorPos = cursorPos;
@@ -715,7 +402,7 @@ public class InputMenu()
                             case EInputMenuItemType.Byte:
                                 {
                                     val = inputBuilder.ToString().TrimStart('0');
-                                    if (val == "") val = "0";
+                                    if (val is "") val = "0";
                                     if (BigInteger.TryParse(val, out BigInteger bigVal))
                                     {
                                         switch (currentItem.Type)
@@ -755,41 +442,26 @@ public class InputMenu()
                                 {
                                     val = inputBuilder.ToString();
 
-                                    // --- Сохраняем количество завершающих нулей и наличие точки ---
-                                    int trailingZeros = 0;
-                                    bool hasDot = false;
-                                    bool endsWithDot = false;
-                                    for (int i = val.Length - 1; i >= 0; i--)
-                                    {
-                                        if (val[i] == '0') trailingZeros++;
-                                        else break;
-                                    }
-                                    hasDot = val.Contains('.') || val.Contains(',');
-                                    endsWithDot = val.EndsWith(".") || val.EndsWith(",");
+                                    bool endsWithDot = val.EndsWith(".") || val.EndsWith(",");
 
                                     isNegative = val.StartsWith("-");
                                     string rest = isNegative ? val[1..] : val;
                                     rest = rest.Replace(',', '.');
 
-                                    // Удаляем все лишние точки, кроме первой
                                     int dotIndex = rest.IndexOf('.');
                                     if (dotIndex >= 0)
-                                        rest = rest[..(dotIndex + 1)] + rest[(dotIndex + 1)..].Replace(".", "");
+                                        rest = rest[..(dotIndex + 1)] + rest[(dotIndex + 1)..].Replace(".", string.Empty);
 
-                                    // Не удаляем ведущий 0, если после него идёт точка (например, "0.0" или "0.")
-                                    if (rest.Length > 1 && rest.StartsWith("0") && rest[1] != '.')
+                                    if (rest.Length > 1 && rest.StartsWith("0") && rest[1]  '.')
                                     {
                                         int firstNonZero = 0;
                                         while (firstNonZero < rest.Length && rest[firstNonZero] == '0') firstNonZero++;
                                         rest = firstNonZero == rest.Length ? "0" : rest[firstNonZero..];
                                     }
-                                    if (rest == "" || rest.StartsWith(".")) rest = "0" + rest;
+                                    if (rest is "" || rest.StartsWith(".")) rest = "0" + rest;
 
-                                    // Если строка начинается с "0." (или "-0."), оставляем как есть
                                     val = rest.StartsWith("0.") && isNegative ? "-" + rest : rest.StartsWith("0.") ? rest : isNegative ? "-" + rest : rest;
 
-                                    // --- Не парсим и не округляем, если пользователь явно вводит дробную часть ---
-                                    // (то есть если есть точка и после неё есть хотя бы одна цифра, или строка заканчивается на точку)
                                     bool userTypingFraction = false;
                                     int pointPos = val.IndexOf('.');
                                     if (pointPos >= 0 && (pointPos < val.Length - 1 || endsWithDot))
@@ -822,8 +494,6 @@ public class InputMenu()
                                         }
                                     }
 
-                                    // --- Не добавляем завершающие нули вручную, они уже есть в строке ---
-
                                     int oldCursorPos = cursorPos;
                                     oldLength = inputBuilder.Length;
                                     int newLength = val.Length;
@@ -840,17 +510,15 @@ public class InputMenu()
 
                         MenuItems[selected].InputValue = inputBuilder.ToString();
 
-                        // --- После изменения inputBuilder и cursorPos ---
-                        var (line, col) = GetCursorLineCol(inputBuilder.ToString(), cursorPos, inputLeft, lineWidth);
-                        Console.SetCursorPosition((line == 0 ? inputLeft : 0) + col, inputTop + line);
+                        (int line, int col) = RenderManager.GetCursorLineCol(inputBuilder.ToString(), cursorPos, inputLeft, RenderManager.WindowWidth);
+                        RenderManager.SetCursorPosition((line is 0 ? inputLeft : 0) + col, inputTop + line);
                     }
                 }
 
                 Redraw();
 
-                // Корректно вычисляем позицию курсора для многострочного значения
-                var (lineFinal, colFinal) = GetCursorLineCol(inputBuilder.ToString(), cursorPos, inputLeft, lineWidth);
-                Console.SetCursorPosition((lineFinal == 0 ? inputLeft : 0) + colFinal, inputTop + lineFinal);
+                (int lineFinal, int colFinal) = RenderManager.GetCursorLineCol(inputBuilder.ToString(), cursorPos, inputLeft, RenderManager.WindowWidth);
+                RenderManager.SetCursorPosition((lineFinal is 0 ? inputLeft : 0) + colFinal, inputTop + lineFinal);
 
                 if (breakInnerLoop)
                     break;
@@ -897,7 +565,6 @@ public class InputMenu()
 
         MenuItems.Add(item.SetInputType(type));
 
-        // Если пользователь вручную задал числовой ID, убедимся, что наш авто-инкремент его не перезапишет.
         if (int.TryParse(item.Id, out int numericId))
             nextDefaultId = Math.Max(nextDefaultId, numericId + 1);
         else if (item.Id == (nextDefaultId - 1 > 0 ? nextDefaultId - 1 : 0).ToString())

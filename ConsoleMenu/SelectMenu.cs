@@ -45,36 +45,16 @@ public class SelectMenu()
     {
         if (clear) Console.Clear();
 
+        RenderManager renderManager = new();
         ushort selected = startIndex;
         int menuTop = Console.CursorTop;
-        int menuHeight = MenuItems.Count + 1; // +1 для заголовка
-        Console.CursorVisible = false;
+        int menuHeight = MenuItems.Count + 1;
+        renderManager.SetCursorVisibility(false);
 
         while (true)
         {
-            // --- 1. Перерисовка меню на исходной позиции ---
-            Console.SetCursorPosition(0, menuTop);
+            renderManager.DrawSelectMenu(Title, MenuItems, selected, Theme, menuTop);
 
-            Console.ForegroundColor = Theme.TitleTextColor;
-            Console.BackgroundColor = Theme.TitleBackgroundColor;
-            Console.WriteLine(Title.PadRight(Console.WindowWidth - 1));
-            for (ushort i = 0; i < MenuItems.Count; i++)
-            {
-                if (i == selected)
-                {
-                    Console.ForegroundColor = Theme.SelectedTextColor;
-                    Console.BackgroundColor = Theme.SelectedBackgroundColor;
-                }
-                else
-                {
-                    Console.ForegroundColor = Theme.UnselectedTextColor;
-                    Console.BackgroundColor = Theme.UnselectedBackgroundColor;
-                }
-                Console.WriteLine($"* {MenuItems[i].Text}".PadRight(Console.WindowWidth - 1));
-            }
-            Console.ResetColor(); // Сброс темы для последующего вывода в консоль
-
-            // --- 2. Обработка ввода ---
             ConsoleKeyInfo keyInfo = Console.ReadKey(true);
             switch (keyInfo.Key)
             {
@@ -83,16 +63,9 @@ public class SelectMenu()
                 case ConsoleKey.Enter:
                 case ConsoleKey.Escape:
                     {
-                        // --- 3. Очистка только области меню ---
-                        string cleaner = new(' ', Console.WindowWidth > 1 ? Console.WindowWidth - 1 : 65);
-                        for (int i = 0; i < menuHeight; i++)
-                        {
-                            Console.SetCursorPosition(0, menuTop + i);
-                            Console.Write(cleaner);
-                        }
-                        Console.SetCursorPosition(0, menuTop);
-                        Console.CursorVisible = true;
-                        Console.ResetColor();
+                        renderManager.ClearArea(menuTop, menuHeight, renderManager.WindowWidth);
+                        renderManager.SetCursorVisibility(true);
+                        renderManager.ResetColor();
 
                         if (keyInfo.Key is ConsoleKey.Enter && MenuItems.Count > 0 && MenuItems[selected].Function is not null)
                             MenuItems[selected].Function!();
