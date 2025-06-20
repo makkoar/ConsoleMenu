@@ -47,18 +47,28 @@ public class SelectMenu()
 
         ushort selected = startIndex;
         int menuTop = Console.CursorTop;
-        int menuHeight = MenuItems.Count + 1;
         RenderManager.SetCursorVisibility(false);
 
         while (true)
         {
-            RenderManager.DrawSelectMenu(Title, MenuItems, selected, Theme, menuTop);
+            List<string> titleLines = RenderManager.WrapText(Title, RenderManager.WindowWidth);
+            List<List<string>> itemLinesList = [.. MenuItems.Select(item =>
+            {
+                List<string> lines = RenderManager.WrapText(item.Text, RenderManager.WindowWidth - 2);
+                if (lines.Count is 0)
+                    lines.Add(string.Empty);
+                return lines;
+            })];
+
+            int menuHeight = titleLines.Count + itemLinesList.Sum(lines => lines.Count);
+
+            RenderManager.DrawSelectMenu(titleLines, MenuItems, itemLinesList, selected, Theme, menuTop);
 
             ConsoleKeyInfo keyInfo = Console.ReadKey(true);
             switch (keyInfo.Key)
             {
-                case ConsoleKey.UpArrow: selected = (ushort)(selected != 0 ? selected - 1 : MenuItems.Count - 1); break;
-                case ConsoleKey.DownArrow: selected = (ushort)(selected != MenuItems.Count - 1 ? selected + 1 : 0); break;
+                case ConsoleKey.UpArrow: selected = (ushort)(selected > 0 ? selected - 1 : MenuItems.Count - 1); break;
+                case ConsoleKey.DownArrow: selected = (ushort)(selected < MenuItems.Count - 1 ? selected + 1 : 0); break;
                 case ConsoleKey.Enter:
                 case ConsoleKey.Escape:
                     {

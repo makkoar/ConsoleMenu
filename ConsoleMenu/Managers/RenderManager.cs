@@ -235,25 +235,39 @@ internal static class RenderManager
         ResetColor();
     }
 
-    /// <summary>Отрисовывает полное меню выбора (<see cref="SelectMenu"/>).</summary>
-    /// <param name="title">Заголовок меню.</param>
+    /// <summary>Отрисовывает полное меню выбора (<see cref="SelectMenu"/>) с поддержкой многострочных элементов.</summary>
+    /// <param name="titleLines">Список строк заголовка для отрисовки.</param>
     /// <param name="menuItems">Список элементов меню для отображения.</param>
+    /// <param name="itemLinesList">Список, содержащий списки строк для каждого элемента меню.</param>
     /// <param name="selectedIndex">Индекс текущего выбранного элемента.</param>
     /// <param name="theme">Тема оформления.</param>
     /// <param name="menuTop">Начальная позиция меню по вертикали.</param>
-    public static void DrawSelectMenu(string title, List<SelectMenuItem> menuItems, ushort selectedIndex, Theme theme, int menuTop)
+    public static void DrawSelectMenu(List<string> titleLines, List<SelectMenuItem> menuItems, List<List<string>> itemLinesList, ushort selectedIndex, Theme theme, int menuTop)
     {
         SetCursorPosition(0, menuTop);
 
         Console.ForegroundColor = theme.TitleTextColor;
         Console.BackgroundColor = theme.TitleBackgroundColor;
-        Console.WriteLine(title.PadRight(WindowWidth));
+        for (int i = 0; i < titleLines.Count; i++)
+        {
+            SetCursorPosition(0, menuTop + i);
+            Console.Write(titleLines[i].PadRight(WindowWidth));
+        }
 
+        int currentItemTopOffset = titleLines.Count;
         for (ushort i = 0; i < menuItems.Count; i++)
         {
             Console.ForegroundColor = i == selectedIndex ? theme.SelectedTextColor : theme.UnselectedTextColor;
             Console.BackgroundColor = i == selectedIndex ? theme.SelectedBackgroundColor : theme.UnselectedBackgroundColor;
-            Console.WriteLine($"* {menuItems[i].Text}".PadRight(WindowWidth));
+
+            List<string> lines = itemLinesList[i];
+            for (int j = 0; j < lines.Count; j++)
+            {
+                SetCursorPosition(0, menuTop + currentItemTopOffset + j);
+                string prefix = j is 0 ? "* " : "  ";
+                Console.Write((prefix + lines[j]).PadRight(WindowWidth));
+            }
+            currentItemTopOffset += lines.Count;
         }
         ResetColor();
     }
