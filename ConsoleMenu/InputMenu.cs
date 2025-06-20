@@ -1,8 +1,4 @@
-﻿using System.Globalization;
-using System.Numerics;
-using System.Text;
-
-namespace ConsoleMenu;
+﻿namespace ConsoleMenu;
 
 /// <summary>Класс, реализующий консольное меню для ввода данных пользователем по нескольким полям с поддержкой темизации, проверки уникальности идентификаторов и гибкой настройки элементов.<br/>Позволяет организовать пошаговый ввод значений с валидацией и возвратом результатов в виде словаря.</summary>
 public class InputMenu()
