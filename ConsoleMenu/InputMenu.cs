@@ -130,37 +130,23 @@ public class InputMenu()
 
         foreach (var token in tokens)
         {
-            if (token.Length > currentWidth && !char.IsWhiteSpace(token[0]))
-            {
-                if (currentLine.Length > 0)
-                {
-                    lines.Add(currentLine.ToString());
-                    currentLine.Clear();
-                    currentWidth = maxWidth;
-                }
-                int wordPos = 0;
-                while (wordPos < token.Length)
-                {
-                    int take = Math.Min(currentWidth - currentLine.Length, token.Length - wordPos);
-                    if (take <= 0)
-                    {
-                        lines.Add(currentLine.ToString());
-                        currentLine.Clear();
-                        currentWidth = maxWidth;
-                        take = Math.Min(currentWidth, token.Length - wordPos);
-                    }
-                    currentLine.Append(token.Substring(wordPos, take));
-                    wordPos += take;
-                }
-            }
-            else if (currentLine.Length + token.Length > currentWidth)
+            // Если токен не помещается на текущей строке (и строка не пуста)
+            if (currentLine.Length > 0 && currentLine.Length + token.Length > currentWidth)
             {
                 lines.Add(currentLine.ToString());
                 currentLine.Clear();
-                currentWidth = maxWidth;
-                if (!char.IsWhiteSpace(token[0]))
+                currentWidth = maxWidth; // Новая строка имеет полную ширину
+            }
+
+            // Если токен сам по себе длиннее строки, разбиваем его
+            if (token.Length > currentWidth)
+            {
+                int tokenPos = 0;
+                while (tokenPos < token.Length)
                 {
-                    currentLine.Append(token);
+                    int take = Math.Min(currentWidth, token.Length - tokenPos);
+                    lines.Add(token.Substring(tokenPos, take));
+                    tokenPos += take;
                 }
             }
             else
@@ -190,102 +176,76 @@ public class InputMenu()
     /// <returns>Кортеж, содержащий строку и столбец курсора.</returns>
     private static (int line, int col) GetCursorLineCol(string value, int cursorPos, int promptLen, int maxWidth)
     {
-        if (cursorPos == 0)
+        if (cursorPos <= 0)
             return (0, 0);
 
         var tokens = Tokenize(value);
 
-        int currentLineIndex = 0;
-        var currentLineContent = new StringBuilder();
-        int currentWidth = maxWidth - promptLen;
+        int line = 0;
+        int col = 0;
         int absolutePos = 0;
+        int currentWidth = maxWidth - promptLen;
 
         foreach (var token in tokens)
         {
+            // Если курсор находится внутри этого токена
             if (cursorPos <= absolutePos + token.Length)
             {
-                int remainingPos = cursorPos - absolutePos;
-                int col = currentLineContent.Length;
+                int localPos = cursorPos - absolutePos; // Позиция внутри токена
 
-                if (token.Length > currentWidth && !char.IsWhiteSpace(token[0]))
+                // Проверяем, перенесся бы этот токен на новую строку
+                if (col > 0 && col + token.Length > currentWidth)
                 {
-                    int wordPartPos = 0;
-                    while (wordPartPos < remainingPos)
-                    {
-                        int take = Math.Min(currentWidth - col, remainingPos - wordPartPos);
-                        if (take <= 0)
-                        {
-                            currentLineIndex++;
-                            col = 0;
-                            currentWidth = maxWidth;
-                            take = Math.Min(currentWidth, remainingPos - wordPartPos);
-                        }
-                        col += take;
-                        wordPartPos += take;
-                    }
-                    return (currentLineIndex, col);
-                }
-
-                if (col + token.Length > currentWidth)
-                {
-                    if (!char.IsWhiteSpace(token[0]))
-                    {
-                        currentLineIndex++;
-                        return (currentLineIndex, remainingPos);
-                    }
-                    else
-                    {
-                        currentLineIndex++;
-                        return (currentLineIndex, 0);
-                    }
-                }
-
-                col += remainingPos;
-                return (currentLineIndex, col);
-            }
-
-            if (token.Length > currentWidth && !char.IsWhiteSpace(token[0]))
-            {
-                if (currentLineContent.Length > 0)
-                {
-                    currentLineIndex++;
-                    currentLineContent.Clear();
+                    line++;
+                    col = 0;
                     currentWidth = maxWidth;
                 }
-                int wordPos = 0;
-                while (wordPos < token.Length)
+
+                // Если токен длиннее строки, вычисляем позицию внутри разбитого токена
+                if (token.Length > currentWidth)
                 {
-                    int take = Math.Min(currentWidth - currentLineContent.Length, token.Length - wordPos);
-                    if (take <= 0)
-                    {
-                        currentLineIndex++;
-                        currentLineContent.Clear();
-                        currentWidth = maxWidth;
-                        take = Math.Min(currentWidth, token.Length - wordPos);
-                    }
-                    currentLineContent.Append(token.Substring(wordPos, take));
-                    wordPos += take;
+                    line += localPos / currentWidth;
+                    col = localPos % currentWidth;
                 }
-            }
-            else if (currentLineContent.Length + token.Length > currentWidth)
-            {
-                currentLineIndex++;
-                currentLineContent.Clear();
-                currentWidth = maxWidth;
-                if (!char.IsWhiteSpace(token[0]))
+                else // Иначе просто добавляем смещение
                 {
-                    currentLineContent.Append(token);
+                    col += localPos;
+                }
+
+                return (line, col);
+            }
+
+            // Если курсор дальше, полностью "размещаем" токен и обновляем позицию
+            // Проверяем, нужен ли перенос перед размещением токена
+            if (col > 0 && col + token.Length > currentWidth)
+            {
+                line++;
+                col = 0;
+                currentWidth = maxWidth;
+            }
+
+            // Если токен длиннее строки, он займет несколько строк
+            if (token.Length > currentWidth)
+            {
+                line += (token.Length - 1) / currentWidth;
+                col = token.Length % currentWidth;
+                if (col == 0 && token.Length > 0)
+                {
+                    // Если он закончился ровно на границе, курсор на след. строке в 0
+                    col = currentWidth;
+                    line--; // Компенсируем лишний инкремент строки
                 }
             }
             else
             {
-                currentLineContent.Append(token);
+                col += token.Length;
             }
 
             absolutePos += token.Length;
         }
 
-        return (currentLineIndex, currentLineContent.Length);
+        // Если курсор в самом конце
+        return (line, col);
     }
 
     /// <summary>Отображает меню, обрабатывает ввод пользователя по каждому полю и обновляет значения в <see cref="MenuItems"/>.<br/>Позволяет перемещаться между полями, редактировать значения, отменять ввод или подтверждать результат.</summary>
