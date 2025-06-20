@@ -1,9 +1,4 @@
-﻿using ConsoleMenu.Models;
-using System.Globalization;
-using System.Numerics;
-using System.Text;
-
-namespace ConsoleMenu;
+﻿namespace ConsoleMenu;
 
 /// <summary>Класс, реализующий консольное меню для ввода данных пользователем по нескольким полям с поддержкой темизации, проверки уникальности идентификаторов и гибкой настройки элементов.<br/>Позволяет организовать пошаговый ввод значений с валидацией и возвратом результатов в виде словаря.</summary>
 public class InputMenu()
@@ -13,7 +8,7 @@ public class InputMenu()
     private readonly HashSet<string> usedIds = [];
 
     /// <summary>Счётчик для генерации уникальных ID по умолчанию для новых элементов меню.<br/>Автоматически увеличивается при добавлении элементов без явного ID.</summary>
-    private int nextDefaultId = 0;
+    private uint nextDefaultId = 0;
 
     /// <summary>Кэшированное значение общей высоты меню в строках.<br/>Рассчитывается динамически в методе <see cref="Apply(bool)"/> и используется для корректной очистки области меню при перерисовке.</summary>
     private int menuHeight = 0;
@@ -659,7 +654,7 @@ public class InputMenu()
     /// <param name="id">Необязательный идентификатор, который будет присвоен элементу, переопределяя существующий в <paramref name="item"/>.</param>
     /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
     /// <exception cref="ArgumentException">Выбрасывается, если элемент с таким идентификатором уже существует в меню.</exception>
-    internal InputMenu AddMenuItem(InputMenuItem item, string? id = null)
+    public InputMenu AddMenuItem(InputMenuItem item, string? id = null)
     {
         if (string.IsNullOrEmpty(item.Id = id))
             item.Id = nextDefaultId.ToString();
@@ -669,7 +664,7 @@ public class InputMenu()
 
         MenuItems.Add(item);
 
-        if (int.TryParse(item.Id, out int numericId))
+        if (uint.TryParse(item.Id, out uint numericId))
             nextDefaultId = Math.Max(nextDefaultId, numericId + 1);
         else if (item.Id == (nextDefaultId - 1 > 0 ? nextDefaultId - 1 : 0).ToString())
             nextDefaultId++;
