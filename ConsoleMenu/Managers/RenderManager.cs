@@ -1,4 +1,6 @@
-﻿namespace ConsoleMenu.Managers;
+﻿using ConsoleMenu.Models;
+
+namespace ConsoleMenu.Managers;
 
 /// <summary>Управляет всеми операциями отрисовки и компоновки элементов меню в консоли.</summary>
 /// <remarks>Этот статический класс инкапсулирует логику взаимодействия с <see cref="System.Console"/>,<br/> предоставляя высокоуровневые методы для отрисовки заголовков, пунктов меню, полей ввода,<br/> а также утилиты для компоновки текста.</remarks>
@@ -21,6 +23,29 @@ internal static class RenderManager
 
     /// <summary>Сбрасывает цвета консоли к значениям по умолчанию.</summary>
     public static void ResetColor() => Console.ResetColor();
+
+    /// <summary>Вычисляет и устанавливает позицию курсора для поля ввода, а также возвращает его горизонтальную колонку.</summary>
+    /// <param name="value">Текущее значение поля ввода.</param>
+    /// <param name="cursorPos">Позиция курсора внутри строки `value`.</param>
+    /// <param name="promptLines">Список строк текста-приглашения для вычисления отступов.</param>
+    /// <param name="itemTop">Начальная позиция элемента по вертикали.</param>
+    /// <param name="maxWidth">Максимальная ширина строки.</param>
+    /// <returns>Горизонтальная колонка (X-координата) курсора на экране.</returns>
+    public static int UpdateCursorPosition(string value, int cursorPos, List<string> promptLines, int itemTop, int maxWidth)
+    {
+        int promptLen = promptLines[^1].Length + 2;
+        int itemContentTop = itemTop + promptLines.Count - 1;
+
+        CursorPosition position = GetCursorLineCol(value, cursorPos, promptLen, maxWidth);
+
+        int screenLeft = position.Column + (position.Line == 0 ? promptLen : 0);
+        int screenTop = itemContentTop + position.Line;
+
+        SetCursorPosition(screenLeft, screenTop);
+        SetCursorVisibility(true);
+
+        return screenLeft;
+    }
     #endregion
 
     #region Компоновка текста
@@ -140,43 +165,20 @@ internal static class RenderManager
     /// <param name="cursorPos">Позиция курсора в строке.</param>
     /// <param name="promptLen">Длина текста prompt.</param>
     /// <param name="maxWidth">Максимальная ширина строки.</param>
-    /// <returns>Кортеж, содержащий строку и столбец курсора.</returns>
-    public static (int line, int col) GetCursorLineCol(string value, int cursorPos, int promptLen, int maxWidth)
+    /// <returns>Экземпляр <see cref="CursorPosition"/>, содержащий строку и столбец курсора.</returns>
+    public static CursorPosition GetCursorLineCol(string value, int cursorPos, int promptLen, int maxWidth)
     {
-        if (cursorPos <= 0)
-            return (0, 0);
+        if (cursorPos < 0) cursorPos = 0;
+        if (cursorPos > value.Length) cursorPos = value.Length;
 
-        List<string> tokens = Tokenize(value);
+        List<string> tokens = Tokenize(value[..cursorPos]);
 
         int line = 0;
         int col = 0;
-        int absolutePos = 0;
         int currentWidth = maxWidth - promptLen;
 
         foreach (string token in tokens)
         {
-            if (cursorPos <= absolutePos + token.Length)
-            {
-                int localPos = cursorPos - absolutePos;
-
-                if (col > 0 && col + token.Length > currentWidth)
-                {
-                    line++;
-                    col = 0;
-                    currentWidth = maxWidth;
-                }
-
-                if (token.Length > currentWidth)
-                {
-                    line += localPos / currentWidth;
-                    col = localPos % currentWidth;
-                }
-                else
-                    col += localPos;
-
-                return (line, col);
-            }
-
             if (col > 0 && col + token.Length > currentWidth)
             {
                 line++;
@@ -186,21 +188,14 @@ internal static class RenderManager
 
             if (token.Length > currentWidth)
             {
-                line += (token.Length - 1) / currentWidth;
-                col = token.Length % currentWidth;
-                if (col is 0 && token.Length > 0)
-                {
-                    col = currentWidth;
-                    line--;
-                }
+                line += (col + token.Length) / currentWidth;
+                col = (col + token.Length) % currentWidth;
             }
             else
                 col += token.Length;
-
-            absolutePos += token.Length;
         }
 
-        return (line, col);
+        return new CursorPosition(line, col);
     }
     #endregion
 

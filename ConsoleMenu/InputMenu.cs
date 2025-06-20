@@ -1,4 +1,6 @@
-﻿namespace ConsoleMenu;
+﻿using ConsoleMenu.Models;
+
+namespace ConsoleMenu;
 
 /// <summary>Класс, реализующий консольное меню для ввода данных пользователем по нескольким полям с поддержкой темизации, проверки уникальности идентификаторов и гибкой настройки элементов.<br/>Позволяет организовать пошаговый ввод значений с валидацией и возвратом результатов в виде словаря.</summary>
 public class InputMenu()
@@ -101,9 +103,8 @@ public class InputMenu()
 
         Redraw();
 
-        int inputLeft = 0;
-        int inputTop = 0;
         int cursorPos = 0;
+        int savedHorizontalColumn = 0;
 
         if (MenuItems.Count > 0)
             cursorPos = (MenuItems[0].InputValue ?? string.Empty).Length;
@@ -112,35 +113,109 @@ public class InputMenu()
         {
             InputMenuItem currentItem = MenuItems[selected];
             List<string> promptLines = promptLinesList[selected];
-            string prompt = promptLines[^1] + ": ";
             StringBuilder inputBuilder = new(currentItem.InputValue ?? string.Empty);
-            inputLeft = prompt.Length;
-            inputTop = GetMenuItemTop(selected) + promptLines.Count - 1;
 
             if (cursorPos > inputBuilder.Length)
                 cursorPos = inputBuilder.Length;
 
-            (int cursorLine, int cursorCol) = RenderManager.GetCursorLineCol(inputBuilder.ToString(), cursorPos, inputLeft, RenderManager.WindowWidth);
-            RenderManager.SetCursorPosition((cursorLine is 0 ? inputLeft : 0) + cursorCol, inputTop + cursorLine);
-            RenderManager.SetCursorVisibility(true);
+            savedHorizontalColumn = RenderManager.UpdateCursorPosition(inputBuilder.ToString(), cursorPos, promptLines, GetMenuItemTop(selected), RenderManager.WindowWidth);
 
             while (true)
             {
                 ConsoleKeyInfo keyInfo = Console.ReadKey(true);
 
                 bool breakInnerLoop = false;
+                string currentValue = inputBuilder.ToString();
+                int promptLen = promptLines[^1].Length + 2;
 
                 if (keyInfo.Key is ConsoleKey.UpArrow)
                 {
-                    MenuItems[selected].InputValue = inputBuilder.ToString();
-                    selected = (selected - 1 + MenuItems.Count) % MenuItems.Count;
-                    breakInnerLoop = true;
+                    CursorPosition currentPos = RenderManager.GetCursorLineCol(currentValue, cursorPos, promptLen, RenderManager.WindowWidth);
+
+                    if (currentPos.Line > 0)
+                    {
+                        // Навигация внутри поля вверх
+                        int targetLine = currentPos.Line - 1;
+                        int p = 0;
+                        while (p <= currentValue.Length)
+                        {
+                            CursorPosition pos = RenderManager.GetCursorLineCol(currentValue, p, promptLen, RenderManager.WindowWidth);
+                            int screenCol = pos.Column + (pos.Line == 0 ? promptLen : 0);
+                            if (pos.Line == targetLine && screenCol >= savedHorizontalColumn) break;
+                            if (pos.Line > targetLine) break;
+                            p++;
+                        }
+                        if (p > 0 && RenderManager.GetCursorLineCol(currentValue, p, promptLen, RenderManager.WindowWidth).Line > targetLine) p--;
+                        cursorPos = p;
+                    }
+                    else
+                    {
+                        // Переход на предыдущее поле
+                        MenuItems[selected].InputValue = currentValue;
+                        selected = (selected - 1 + MenuItems.Count) % MenuItems.Count;
+
+                        string prevValue = MenuItems[selected].InputValue ?? string.Empty;
+                        int prevPromptLen = promptLinesList[selected][^1].Length + 2;
+                        CursorPosition lastLinePos = RenderManager.GetCursorLineCol(prevValue, prevValue.Length, prevPromptLen, RenderManager.WindowWidth);
+
+                        int p = 0;
+                        while (p <= prevValue.Length)
+                        {
+                            CursorPosition pos = RenderManager.GetCursorLineCol(prevValue, p, prevPromptLen, RenderManager.WindowWidth);
+                            int screenCol = pos.Column + (pos.Line == 0 ? prevPromptLen : 0);
+                            if (pos.Line == lastLinePos.Line && screenCol >= savedHorizontalColumn) break;
+                            if (pos.Line > lastLinePos.Line) break;
+                            p++;
+                        }
+                        if (p > 0 && RenderManager.GetCursorLineCol(prevValue, p, prevPromptLen, RenderManager.WindowWidth).Line > lastLinePos.Line) p--;
+                        cursorPos = p > prevValue.Length ? prevValue.Length : p;
+
+                        breakInnerLoop = true;
+                    }
                 }
                 else if (keyInfo.Key is ConsoleKey.DownArrow)
                 {
-                    MenuItems[selected].InputValue = inputBuilder.ToString();
-                    selected = (selected + 1) % MenuItems.Count;
-                    breakInnerLoop = true;
+                    CursorPosition lastLinePos = RenderManager.GetCursorLineCol(currentValue, currentValue.Length, promptLen, RenderManager.WindowWidth);
+                    CursorPosition currentPos = RenderManager.GetCursorLineCol(currentValue, cursorPos, promptLen, RenderManager.WindowWidth);
+
+                    if (currentPos.Line < lastLinePos.Line)
+                    {
+                        // Навигация внутри поля вниз
+                        int targetLine = currentPos.Line + 1;
+                        int p = 0;
+                        while (p <= currentValue.Length)
+                        {
+                            CursorPosition pos = RenderManager.GetCursorLineCol(currentValue, p, promptLen, RenderManager.WindowWidth);
+                            int screenCol = pos.Column + (pos.Line == 0 ? promptLen : 0);
+                            if (pos.Line == targetLine && screenCol >= savedHorizontalColumn) break;
+                            if (pos.Line > targetLine) break;
+                            p++;
+                        }
+                        if (p > 0 && RenderManager.GetCursorLineCol(currentValue, p, promptLen, RenderManager.WindowWidth).Line > targetLine) p--;
+                        cursorPos = p;
+                    }
+                    else
+                    {
+                        // Переход на следующее поле
+                        MenuItems[selected].InputValue = currentValue;
+                        selected = (selected + 1) % MenuItems.Count;
+
+                        string nextValue = MenuItems[selected].InputValue ?? string.Empty;
+                        int nextPromptLen = promptLinesList[selected][^1].Length + 2;
+                        int p = 0;
+                        while (p <= nextValue.Length)
+                        {
+                            CursorPosition pos = RenderManager.GetCursorLineCol(nextValue, p, nextPromptLen, RenderManager.WindowWidth);
+                            int screenCol = pos.Column + (pos.Line == 0 ? nextPromptLen : 0);
+                            if (pos.Line == 0 && screenCol >= savedHorizontalColumn) break;
+                            if (pos.Line > 0) break;
+                            p++;
+                        }
+                        if (p > 0 && RenderManager.GetCursorLineCol(nextValue, p, nextPromptLen, RenderManager.WindowWidth).Line > 0) p--;
+                        cursorPos = p > nextValue.Length ? nextValue.Length : p;
+
+                        breakInnerLoop = true;
+                    }
                 }
                 else if (keyInfo.Key is ConsoleKey.Escape)
                 {
@@ -152,8 +227,7 @@ public class InputMenu()
                 }
                 else if (keyInfo.Key is ConsoleKey.Enter)
                 {
-                    string input = inputBuilder.ToString();
-                    MenuItems[selected].InputValue = input;
+                    MenuItems[selected].InputValue = inputBuilder.ToString();
                     RenderManager.SetCursorVisibility(false);
                     ClearMenuArea();
                     return MenuItems.ToDictionary(item => item.Id, item => item);
@@ -203,8 +277,7 @@ public class InputMenu()
                     {
                         MenuItems[selected].InputValue = inputBuilder.ToString();
                         Redraw();
-                        (int line, int col) = RenderManager.GetCursorLineCol(inputBuilder.ToString(), cursorPos, inputLeft, RenderManager.WindowWidth);
-                        RenderManager.SetCursorPosition((line is 0 ? inputLeft : 0) + col, inputTop + line);
+                        savedHorizontalColumn = RenderManager.UpdateCursorPosition(inputBuilder.ToString(), cursorPos, promptLines, GetMenuItemTop(selected), RenderManager.WindowWidth);
                         continue;
                     }
 
@@ -329,8 +402,8 @@ public class InputMenu()
 
                         if (!minusInserted)
                         {
-                            List<string> valLines = RenderManager.WrapInputValue(inputBuilder.ToString().Insert(cursorPos, keyInfo.KeyChar.ToString()), inputLeft, RenderManager.WindowWidth);
-                            if (valLines.Count + inputTop >= Console.BufferHeight)
+                            List<string> valLines = RenderManager.WrapInputValue(inputBuilder.ToString().Insert(cursorPos, keyInfo.KeyChar.ToString()), promptLen, RenderManager.WindowWidth);
+                            if (valLines.Count + GetMenuItemTop(selected) + promptLines.Count - 1 >= Console.BufferHeight)
                                 continue;
                             if (valLines.Any(l => l.Length > RenderManager.WindowWidth))
                                 continue;
@@ -507,18 +580,13 @@ public class InputMenu()
                                     break;
                                 }
                         }
-
                         MenuItems[selected].InputValue = inputBuilder.ToString();
-
-                        (int line, int col) = RenderManager.GetCursorLineCol(inputBuilder.ToString(), cursorPos, inputLeft, RenderManager.WindowWidth);
-                        RenderManager.SetCursorPosition((line is 0 ? inputLeft : 0) + col, inputTop + line);
                     }
                 }
 
                 Redraw();
 
-                (int lineFinal, int colFinal) = RenderManager.GetCursorLineCol(inputBuilder.ToString(), cursorPos, inputLeft, RenderManager.WindowWidth);
-                RenderManager.SetCursorPosition((lineFinal is 0 ? inputLeft : 0) + colFinal, inputTop + lineFinal);
+                savedHorizontalColumn = RenderManager.UpdateCursorPosition(inputBuilder.ToString(), cursorPos, promptLines, GetMenuItemTop(selected), RenderManager.WindowWidth);
 
                 if (breakInnerLoop)
                     break;
