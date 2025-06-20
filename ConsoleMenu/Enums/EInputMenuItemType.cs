@@ -1,7 +1,7 @@
 ﻿namespace ConsoleMenu.Enums;
 
 /// <summary>Перечисление поддерживаемых типов ввода для InputMenuItem.</summary>
-public enum EInputMenuItemType : byte
+internal enum EInputMenuItemType : byte
 {
     /// <summary>Строковый тип ввода.</summary>
     String,

@@ -1,4 +1,7 @@
 ﻿using ConsoleMenu.Models;
+using System.Globalization;
+using System.Numerics;
+using System.Text;
 
 namespace ConsoleMenu;
 
@@ -50,10 +53,10 @@ public class InputMenu()
     {
         List<string?> initialValues = [.. MenuItems.Select(item => item.InputValue)];
         int selected = 0;
+        int oldHeight;
         if (clear) Console.Clear();
 
         int menuTop = Console.CursorTop;
-        RenderManager.SetCursorVisibility(true);
 
         List<string> titleLines = RenderManager.WrapText(Title, RenderManager.WindowWidth);
 
@@ -115,10 +118,15 @@ public class InputMenu()
             List<string> promptLines = promptLinesList[selected];
             StringBuilder inputBuilder = new(currentItem.InputValue ?? string.Empty);
 
-            if (cursorPos > inputBuilder.Length)
-                cursorPos = inputBuilder.Length;
+            RenderManager.SetCursorVisibility(currentItem.Type != EInputMenuItemType.Bool);
 
-            savedHorizontalColumn = RenderManager.UpdateCursorPosition(inputBuilder.ToString(), cursorPos, promptLines, GetMenuItemTop(selected), RenderManager.WindowWidth);
+            if (currentItem.Type != EInputMenuItemType.Bool)
+            {
+                if (cursorPos > inputBuilder.Length)
+                    cursorPos = inputBuilder.Length;
+
+                savedHorizontalColumn = RenderManager.UpdateCursorPosition(inputBuilder.ToString(), cursorPos, promptLines, GetMenuItemTop(selected), RenderManager.WindowWidth);
+            }
 
             while (true)
             {
@@ -130,91 +138,96 @@ public class InputMenu()
 
                 if (keyInfo.Key is ConsoleKey.UpArrow)
                 {
-                    CursorPosition currentPos = RenderManager.GetCursorLineCol(currentValue, cursorPos, promptLen, RenderManager.WindowWidth);
-
-                    if (currentPos.Line > 0)
+                    if (currentItem.Type == EInputMenuItemType.Bool)
                     {
-                        // Навигация внутри поля вверх
-                        int targetLine = currentPos.Line - 1;
-                        int p = 0;
-                        while (p <= currentValue.Length)
-                        {
-                            CursorPosition pos = RenderManager.GetCursorLineCol(currentValue, p, promptLen, RenderManager.WindowWidth);
-                            int screenCol = pos.Column + (pos.Line == 0 ? promptLen : 0);
-                            if (pos.Line == targetLine && screenCol >= savedHorizontalColumn) break;
-                            if (pos.Line > targetLine) break;
-                            p++;
-                        }
-                        if (p > 0 && RenderManager.GetCursorLineCol(currentValue, p, promptLen, RenderManager.WindowWidth).Line > targetLine) p--;
-                        cursorPos = p;
+                        selected = (selected - 1 + MenuItems.Count) % MenuItems.Count;
+                        breakInnerLoop = true;
                     }
                     else
                     {
-                        // Переход на предыдущее поле
-                        MenuItems[selected].InputValue = currentValue;
-                        selected = (selected - 1 + MenuItems.Count) % MenuItems.Count;
-
-                        string prevValue = MenuItems[selected].InputValue ?? string.Empty;
-                        int prevPromptLen = promptLinesList[selected][^1].Length + 2;
-                        CursorPosition lastLinePos = RenderManager.GetCursorLineCol(prevValue, prevValue.Length, prevPromptLen, RenderManager.WindowWidth);
-
-                        int p = 0;
-                        while (p <= prevValue.Length)
+                        CursorPosition currentPos = RenderManager.GetCursorLineCol(currentValue, cursorPos, promptLen, RenderManager.WindowWidth);
+                        if (currentPos.Line > 0)
                         {
-                            CursorPosition pos = RenderManager.GetCursorLineCol(prevValue, p, prevPromptLen, RenderManager.WindowWidth);
-                            int screenCol = pos.Column + (pos.Line == 0 ? prevPromptLen : 0);
-                            if (pos.Line == lastLinePos.Line && screenCol >= savedHorizontalColumn) break;
-                            if (pos.Line > lastLinePos.Line) break;
-                            p++;
+                            int targetLine = currentPos.Line - 1;
+                            int p = 0;
+                            while (p <= currentValue.Length)
+                            {
+                                CursorPosition pos = RenderManager.GetCursorLineCol(currentValue, p, promptLen, RenderManager.WindowWidth);
+                                int screenCol = pos.Column + (pos.Line == 0 ? promptLen : 0);
+                                if (pos.Line == targetLine && screenCol >= savedHorizontalColumn) break;
+                                if (pos.Line > targetLine) break;
+                                p++;
+                            }
+                            if (p > 0 && RenderManager.GetCursorLineCol(currentValue, p, promptLen, RenderManager.WindowWidth).Line > targetLine) p--;
+                            cursorPos = p;
                         }
-                        if (p > 0 && RenderManager.GetCursorLineCol(prevValue, p, prevPromptLen, RenderManager.WindowWidth).Line > lastLinePos.Line) p--;
-                        cursorPos = p > prevValue.Length ? prevValue.Length : p;
-
-                        breakInnerLoop = true;
+                        else
+                        {
+                            MenuItems[selected].InputValue = currentValue;
+                            selected = (selected - 1 + MenuItems.Count) % MenuItems.Count;
+                            string prevValue = MenuItems[selected].InputValue ?? string.Empty;
+                            int prevPromptLen = promptLinesList[selected][^1].Length + 2;
+                            CursorPosition lastLinePos = RenderManager.GetCursorLineCol(prevValue, prevValue.Length, prevPromptLen, RenderManager.WindowWidth);
+                            int p = 0;
+                            while (p <= prevValue.Length)
+                            {
+                                CursorPosition pos = RenderManager.GetCursorLineCol(prevValue, p, prevPromptLen, RenderManager.WindowWidth);
+                                int screenCol = pos.Column + (pos.Line == 0 ? prevPromptLen : 0);
+                                if (pos.Line == lastLinePos.Line && screenCol >= savedHorizontalColumn) break;
+                                if (pos.Line > lastLinePos.Line) break;
+                                p++;
+                            }
+                            if (p > 0 && RenderManager.GetCursorLineCol(prevValue, p, prevPromptLen, RenderManager.WindowWidth).Line > lastLinePos.Line) p--;
+                            cursorPos = p > prevValue.Length ? prevValue.Length : p;
+                            breakInnerLoop = true;
+                        }
                     }
                 }
                 else if (keyInfo.Key is ConsoleKey.DownArrow)
                 {
-                    CursorPosition lastLinePos = RenderManager.GetCursorLineCol(currentValue, currentValue.Length, promptLen, RenderManager.WindowWidth);
-                    CursorPosition currentPos = RenderManager.GetCursorLineCol(currentValue, cursorPos, promptLen, RenderManager.WindowWidth);
-
-                    if (currentPos.Line < lastLinePos.Line)
+                    if (currentItem.Type == EInputMenuItemType.Bool)
                     {
-                        // Навигация внутри поля вниз
-                        int targetLine = currentPos.Line + 1;
-                        int p = 0;
-                        while (p <= currentValue.Length)
-                        {
-                            CursorPosition pos = RenderManager.GetCursorLineCol(currentValue, p, promptLen, RenderManager.WindowWidth);
-                            int screenCol = pos.Column + (pos.Line == 0 ? promptLen : 0);
-                            if (pos.Line == targetLine && screenCol >= savedHorizontalColumn) break;
-                            if (pos.Line > targetLine) break;
-                            p++;
-                        }
-                        if (p > 0 && RenderManager.GetCursorLineCol(currentValue, p, promptLen, RenderManager.WindowWidth).Line > targetLine) p--;
-                        cursorPos = p;
+                        selected = (selected + 1) % MenuItems.Count;
+                        breakInnerLoop = true;
                     }
                     else
                     {
-                        // Переход на следующее поле
-                        MenuItems[selected].InputValue = currentValue;
-                        selected = (selected + 1) % MenuItems.Count;
-
-                        string nextValue = MenuItems[selected].InputValue ?? string.Empty;
-                        int nextPromptLen = promptLinesList[selected][^1].Length + 2;
-                        int p = 0;
-                        while (p <= nextValue.Length)
+                        CursorPosition lastLinePos = RenderManager.GetCursorLineCol(currentValue, currentValue.Length, promptLen, RenderManager.WindowWidth);
+                        CursorPosition currentPos = RenderManager.GetCursorLineCol(currentValue, cursorPos, promptLen, RenderManager.WindowWidth);
+                        if (currentPos.Line < lastLinePos.Line)
                         {
-                            CursorPosition pos = RenderManager.GetCursorLineCol(nextValue, p, nextPromptLen, RenderManager.WindowWidth);
-                            int screenCol = pos.Column + (pos.Line == 0 ? nextPromptLen : 0);
-                            if (pos.Line == 0 && screenCol >= savedHorizontalColumn) break;
-                            if (pos.Line > 0) break;
-                            p++;
+                            int targetLine = currentPos.Line + 1;
+                            int p = 0;
+                            while (p <= currentValue.Length)
+                            {
+                                CursorPosition pos = RenderManager.GetCursorLineCol(currentValue, p, promptLen, RenderManager.WindowWidth);
+                                int screenCol = pos.Column + (pos.Line == 0 ? promptLen : 0);
+                                if (pos.Line == targetLine && screenCol >= savedHorizontalColumn) break;
+                                if (pos.Line > targetLine) break;
+                                p++;
+                            }
+                            if (p > 0 && RenderManager.GetCursorLineCol(currentValue, p, promptLen, RenderManager.WindowWidth).Line > targetLine) p--;
+                            cursorPos = p;
                         }
-                        if (p > 0 && RenderManager.GetCursorLineCol(nextValue, p, nextPromptLen, RenderManager.WindowWidth).Line > 0) p--;
-                        cursorPos = p > nextValue.Length ? nextValue.Length : p;
-
-                        breakInnerLoop = true;
+                        else
+                        {
+                            MenuItems[selected].InputValue = currentValue;
+                            selected = (selected + 1) % MenuItems.Count;
+                            string nextValue = MenuItems[selected].InputValue ?? string.Empty;
+                            int nextPromptLen = promptLinesList[selected][^1].Length + 2;
+                            int p = 0;
+                            while (p <= nextValue.Length)
+                            {
+                                CursorPosition pos = RenderManager.GetCursorLineCol(nextValue, p, nextPromptLen, RenderManager.WindowWidth);
+                                int screenCol = pos.Column + (pos.Line == 0 ? nextPromptLen : 0);
+                                if (pos.Line == 0 && screenCol >= savedHorizontalColumn) break;
+                                if (pos.Line > 0) break;
+                                p++;
+                            }
+                            if (p > 0 && RenderManager.GetCursorLineCol(nextValue, p, nextPromptLen, RenderManager.WindowWidth).Line > 0) p--;
+                            cursorPos = p > nextValue.Length ? nextValue.Length : p;
+                            breakInnerLoop = true;
+                        }
                     }
                 }
                 else if (keyInfo.Key is ConsoleKey.Escape)
@@ -234,7 +247,7 @@ public class InputMenu()
                 }
                 else if (keyInfo.Key is ConsoleKey.Backspace)
                 {
-                    if (cursorPos > 0)
+                    if (currentItem.Type != EInputMenuItemType.Bool && cursorPos > 0)
                     {
                         _ = inputBuilder.Remove(cursorPos - 1, 1);
                         cursorPos--;
@@ -243,7 +256,7 @@ public class InputMenu()
                 }
                 else if (keyInfo.Key is ConsoleKey.Delete)
                 {
-                    if (cursorPos < inputBuilder.Length)
+                    if (currentItem.Type != EInputMenuItemType.Bool && cursorPos < inputBuilder.Length)
                     {
                         _ = inputBuilder.Remove(cursorPos, 1);
                         MenuItems[selected].InputValue = inputBuilder.ToString();
@@ -261,332 +274,355 @@ public class InputMenu()
                 }
                 else if (!char.IsControl(keyInfo.KeyChar))
                 {
-                    bool minusInserted = false;
-                    if ((currentItem.Type is EInputMenuItemType.Int or EInputMenuItemType.Short or EInputMenuItemType.SByte
-                        or EInputMenuItemType.Float or EInputMenuItemType.Double or EInputMenuItemType.Decimal)
-                        && keyInfo.KeyChar is '-'
-                        && (inputBuilder.ToString() is "0" or "" && cursorPos is 0 or 1))
+                    if (currentItem.Type is EInputMenuItemType.Bool)
                     {
-                        _ = inputBuilder.Clear();
-                        _ = inputBuilder.Append('-');
-                        cursorPos = 1;
-                        minusInserted = true;
-                    }
-
-                    if (minusInserted)
-                    {
+                        if (keyInfo.Key is ConsoleKey.Spacebar)
+                        {
+                            _ = bool.TryParse(inputBuilder.ToString(), out bool currentBoolValue);
+                            _ = inputBuilder.Clear().Append(!currentBoolValue);
+                        }
+                        else if (keyInfo.KeyChar is 't' or 'T')
+                            _ = inputBuilder.Clear().Append("True");
+                        else if (keyInfo.KeyChar is 'f' or 'F')
+                            _ = inputBuilder.Clear().Append("False");
                         MenuItems[selected].InputValue = inputBuilder.ToString();
-                        Redraw();
-                        savedHorizontalColumn = RenderManager.UpdateCursorPosition(inputBuilder.ToString(), cursorPos, promptLines, GetMenuItemTop(selected), RenderManager.WindowWidth);
-                        continue;
                     }
-
-                    bool allowInput = false;
-                    switch (currentItem.Type)
+                    else
                     {
-                        case EInputMenuItemType.String:
-                            allowInput = true;
-                            break;
-                        case EInputMenuItemType.Int:
-                        case EInputMenuItemType.Short:
-                        case EInputMenuItemType.SByte:
-                            if (char.IsDigit(keyInfo.KeyChar))
-                                allowInput = true;
-                            else if (keyInfo.KeyChar is '-' && cursorPos is 0 && !inputBuilder.ToString().Contains('-'))
-                                allowInput = true;
-                            break;
-                        case EInputMenuItemType.UInt:
-                        case EInputMenuItemType.UShort:
-                        case EInputMenuItemType.Byte:
-                            if (char.IsDigit(keyInfo.KeyChar))
-                                allowInput = true;
-                            break;
-                        case EInputMenuItemType.Float:
-                        case EInputMenuItemType.Double:
-                        case EInputMenuItemType.Decimal:
-                            if (char.IsDigit(keyInfo.KeyChar))
-                                allowInput = true;
-                            else if (keyInfo.KeyChar is '-' && cursorPos is 0 && !inputBuilder.ToString().Contains('-'))
-                                allowInput = true;
-                            else if ((keyInfo.KeyChar is '.' or ',') &&
-                                     !inputBuilder.ToString().Contains('.') && !inputBuilder.ToString().Contains(','))
-                            {
-                                string digitsOnly = inputBuilder.ToString().Replace("-", string.Empty).Replace(".", string.Empty).Replace(",", string.Empty);
-                                int maxSignificant = GetSignificantLimit(currentItem.Type);
-                                allowInput = digitsOnly.Length < maxSignificant;
-                            }
-                            break;
-                        default:
-                            allowInput = true;
-                            break;
-                    }
-
-                    if (allowInput)
-                    {
-                        if (currentItem.Type is EInputMenuItemType.Float or EInputMenuItemType.Double or EInputMenuItemType.Decimal
-                            && char.IsDigit(keyInfo.KeyChar))
+                        bool minusInserted = false;
+                        if ((currentItem.Type is EInputMenuItemType.Int or EInputMenuItemType.Short or EInputMenuItemType.SByte
+                            or EInputMenuItemType.Float or EInputMenuItemType.Double or EInputMenuItemType.Decimal)
+                            && keyInfo.KeyChar is '-'
+                            && (inputBuilder.ToString() is "0" or "" && cursorPos is 0 or 1))
                         {
-                            string text = inputBuilder.ToString();
-                            int dotIdx = text.IndexOfAny(['.', ',']);
-                            int intPartLen = (dotIdx >= 0 ? dotIdx : text.Length);
-
-                            int maxDigits = GetSignificantLimit(currentItem.Type);
-
-                            intPartLen = text.StartsWith("-") ? intPartLen - 1 : intPartLen;
-                            if (dotIdx is -1 && text.StartsWith("-"))
-                                intPartLen = text.Length - 1;
-
-                            if (intPartLen >= maxDigits && cursorPos <= intPartLen)
-                                continue;
-
-                            int limit = GetFractionLimit(currentItem.Type);
-                            int fractionLen = text.Length - dotIdx - 1;
-                            if (cursorPos == text.Length)
-                                fractionLen++;
-                            else if (cursorPos > dotIdx)
-                                fractionLen = Math.Max(fractionLen, cursorPos - dotIdx);
-
-                            if (fractionLen > limit)
-                                continue;
-
-                            int maxSignificant = GetSignificantLimit(currentItem.Type);
-
-                            string digitsOnly = text.Replace("-", string.Empty).Replace(".", string.Empty).Replace(",", string.Empty);
-                            int significantCount = digitsOnly.Length;
-
-                            if ((dotIdx is -1 || cursorPos <= dotIdx) && significantCount >= maxSignificant)
-                            {
-                                if (dotIdx >= 0 && text.Length > dotIdx + 1)
-                                {
-                                    int lastDigitIdx = text.Length - 1;
-                                    while (lastDigitIdx > dotIdx && !char.IsDigit(text[lastDigitIdx]))
-                                        lastDigitIdx--;
-                                    if (lastDigitIdx > dotIdx)
-                                    {
-                                        _ = inputBuilder.Remove(lastDigitIdx, 1);
-                                        if (cursorPos > lastDigitIdx) cursorPos--;
-                                    }
-
-                                    string newText = inputBuilder.ToString();
-                                    int newDotIdx = newText.IndexOfAny(['.', ',']);
-                                    if (newDotIdx >= 0 && newDotIdx == newText.Length - 1)
-                                    {
-                                        _ = inputBuilder.Remove(newDotIdx, 1);
-                                        if (cursorPos > newDotIdx) cursorPos--;
-                                    }
-                                }
-                                else
-                                {
-                                    continue;
-                                }
-                            }
-
-                            if (dotIdx >= 0 && cursorPos > dotIdx && significantCount >= maxSignificant)
-                                continue;
+                            _ = inputBuilder.Clear();
+                            _ = inputBuilder.Append('-');
+                            cursorPos = 1;
+                            minusInserted = true;
                         }
 
-                        minusInserted = false;
-                        if ((currentItem.Type is
-                            EInputMenuItemType.Int or EInputMenuItemType.Short or EInputMenuItemType.SByte or
-                            EInputMenuItemType.Float or EInputMenuItemType.Double or EInputMenuItemType.Decimal)
-                            && keyInfo.KeyChar is '-')
+                        if (minusInserted)
                         {
-                            if (inputBuilder.ToString() is "0" or "" && cursorPos is 0 or 1)
-                            {
-                                _ = inputBuilder.Clear();
-                                _ = inputBuilder.Append('-');
-                                cursorPos = 1;
-                                minusInserted = true;
-                            }
+                            MenuItems[selected].InputValue = inputBuilder.ToString();
+                            oldHeight = menuHeight;
+                            Redraw();
+                            if (menuHeight < oldHeight)
+                                RenderManager.ClearArea(menuTop + menuHeight, oldHeight - menuHeight, RenderManager.WindowWidth);
+                            savedHorizontalColumn = RenderManager.UpdateCursorPosition(inputBuilder.ToString(), cursorPos, promptLines, GetMenuItemTop(selected), RenderManager.WindowWidth);
+                            continue;
                         }
 
-                        if (!minusInserted)
-                        {
-                            List<string> valLines = RenderManager.WrapInputValue(inputBuilder.ToString().Insert(cursorPos, keyInfo.KeyChar.ToString()), promptLen, RenderManager.WindowWidth);
-                            if (valLines.Count + GetMenuItemTop(selected) + promptLines.Count - 1 >= Console.BufferHeight)
-                                continue;
-                            if (valLines.Any(l => l.Length > RenderManager.WindowWidth))
-                                continue;
-
-                            _ = inputBuilder.Insert(cursorPos, keyInfo.KeyChar);
-                            cursorPos++;
-                        }
-
-                        string val;
-                        bool isNegative, parsed;
-                        int oldLength;
+                        bool allowInput = false;
                         switch (currentItem.Type)
                         {
+                            case EInputMenuItemType.String:
+                                allowInput = true;
+                                break;
                             case EInputMenuItemType.Int:
                             case EInputMenuItemType.Short:
                             case EInputMenuItemType.SByte:
-                                {
-                                    val = inputBuilder.ToString();
-                                    if (val is "-")
-                                        break;
-                                    isNegative = val.StartsWith("-");
-                                    string numberPart = val[(isNegative ? 1 : 0)..].TrimStart('0');
-                                    if (numberPart is "" or "0")
-                                        numberPart = "0";
-                                    val = isNegative ? (numberPart is "0" ? "-0" : "-" + numberPart) : numberPart;
-
-                                    if (BigInteger.TryParse(val, out BigInteger bigVal))
-                                    {
-                                        switch (currentItem.Type)
-                                        {
-                                            case EInputMenuItemType.Int:
-                                                if (bigVal < int.MinValue) bigVal = int.MinValue;
-                                                if (bigVal > int.MaxValue) bigVal = int.MaxValue;
-                                                val = ((int)bigVal).ToString();
-                                                if (isNegative && numberPart is "0") val = "-0";
-                                                break;
-                                            case EInputMenuItemType.Short:
-                                                if (bigVal < short.MinValue) bigVal = short.MinValue;
-                                                if (bigVal > short.MaxValue) bigVal = short.MaxValue;
-                                                val = ((short)bigVal).ToString();
-                                                if (isNegative && numberPart is "0") val = "-0";
-                                                break;
-                                            case EInputMenuItemType.SByte:
-                                                if (bigVal < sbyte.MinValue) bigVal = sbyte.MinValue;
-                                                if (bigVal > sbyte.MaxValue) bigVal = sbyte.MaxValue;
-                                                val = ((sbyte)bigVal).ToString();
-                                                if (isNegative && numberPart is "0") val = "-0";
-                                                break;
-                                        }
-                                    }
-
-                                    if (inputBuilder.ToString() is "-")
-                                        break;
-
-                                    int oldCursorPos = cursorPos;
-                                    oldLength = inputBuilder.Length;
-                                    int newLength = val.Length;
-                                    int delta = newLength - oldLength;
-                                    cursorPos = oldCursorPos + delta;
-                                    if (cursorPos < 0) cursorPos = 0;
-                                    if (cursorPos > newLength) cursorPos = newLength;
-
-                                    _ = inputBuilder.Clear();
-                                    _ = inputBuilder.Append(val);
-                                    break;
-                                }
+                                if (char.IsDigit(keyInfo.KeyChar))
+                                    allowInput = true;
+                                else if (keyInfo.KeyChar is '-' && cursorPos is 0 && !inputBuilder.ToString().Contains('-'))
+                                    allowInput = true;
+                                break;
                             case EInputMenuItemType.UInt:
                             case EInputMenuItemType.UShort:
                             case EInputMenuItemType.Byte:
-                                {
-                                    val = inputBuilder.ToString().TrimStart('0');
-                                    if (val is "") val = "0";
-                                    if (BigInteger.TryParse(val, out BigInteger bigVal))
-                                    {
-                                        switch (currentItem.Type)
-                                        {
-                                            case EInputMenuItemType.UInt:
-                                                if (bigVal < uint.MinValue) bigVal = uint.MinValue;
-                                                if (bigVal > uint.MaxValue) bigVal = uint.MaxValue;
-                                                val = ((uint)bigVal).ToString();
-                                                break;
-                                            case EInputMenuItemType.UShort:
-                                                if (bigVal < ushort.MinValue) bigVal = ushort.MinValue;
-                                                if (bigVal > ushort.MaxValue) bigVal = ushort.MaxValue;
-                                                val = ((ushort)bigVal).ToString();
-                                                break;
-                                            case EInputMenuItemType.Byte:
-                                                if (bigVal < byte.MinValue) bigVal = byte.MinValue;
-                                                if (bigVal > byte.MaxValue) bigVal = byte.MaxValue;
-                                                val = ((byte)bigVal).ToString();
-                                                break;
-                                        }
-                                    }
-                                    int oldCursorPos = cursorPos;
-                                    oldLength = inputBuilder.Length;
-                                    int newLength = val.Length;
-                                    int delta = newLength - oldLength;
-                                    cursorPos = oldCursorPos + delta;
-                                    if (cursorPos < 0) cursorPos = 0;
-                                    if (cursorPos > newLength) cursorPos = newLength;
-
-                                    _ = inputBuilder.Clear();
-                                    _ = inputBuilder.Append(val);
-                                    break;
-                                }
+                                if (char.IsDigit(keyInfo.KeyChar))
+                                    allowInput = true;
+                                break;
                             case EInputMenuItemType.Float:
                             case EInputMenuItemType.Double:
                             case EInputMenuItemType.Decimal:
+                                if (char.IsDigit(keyInfo.KeyChar))
+                                    allowInput = true;
+                                else if (keyInfo.KeyChar is '-' && cursorPos is 0 && !inputBuilder.ToString().Contains('-'))
+                                    allowInput = true;
+                                else if ((keyInfo.KeyChar is '.' or ',') &&
+                                         !inputBuilder.ToString().Contains('.') && !inputBuilder.ToString().Contains(','))
                                 {
-                                    val = inputBuilder.ToString();
+                                    string digitsOnly = inputBuilder.ToString().Replace("-", string.Empty).Replace(".", string.Empty).Replace(",", string.Empty);
+                                    int maxSignificant = GetSignificantLimit(currentItem.Type);
+                                    allowInput = digitsOnly.Length < maxSignificant;
+                                }
+                                break;
+                            default:
+                                allowInput = true;
+                                break;
+                        }
 
-                                    bool endsWithDot = val.EndsWith(".") || val.EndsWith(",");
+                        if (allowInput)
+                        {
+                            if (currentItem.Type is EInputMenuItemType.Float or EInputMenuItemType.Double or EInputMenuItemType.Decimal
+                                && char.IsDigit(keyInfo.KeyChar))
+                            {
+                                string text = inputBuilder.ToString();
+                                int dotIdx = text.IndexOfAny(['.', ',']);
+                                int intPartLen = (dotIdx >= 0 ? dotIdx : text.Length);
 
-                                    isNegative = val.StartsWith("-");
-                                    string rest = isNegative ? val[1..] : val;
-                                    rest = rest.Replace(',', '.');
+                                int maxDigits = GetSignificantLimit(currentItem.Type);
 
-                                    int dotIndex = rest.IndexOf('.');
-                                    if (dotIndex >= 0)
-                                        rest = rest[..(dotIndex + 1)] + rest[(dotIndex + 1)..].Replace(".", string.Empty);
+                                intPartLen = text.StartsWith("-") ? intPartLen - 1 : intPartLen;
+                                if (dotIdx is -1 && text.StartsWith("-"))
+                                    intPartLen = text.Length - 1;
 
-                                    if (rest.Length > 1 && rest.StartsWith("0") && rest[1] is '.')
+                                if (intPartLen >= maxDigits && cursorPos <= intPartLen)
+                                    continue;
+
+                                int limit = GetFractionLimit(currentItem.Type);
+                                int fractionLen = text.Length - dotIdx - 1;
+                                if (cursorPos == text.Length)
+                                    fractionLen++;
+                                else if (cursorPos > dotIdx)
+                                    fractionLen = Math.Max(fractionLen, cursorPos - dotIdx);
+
+                                if (fractionLen > limit)
+                                    continue;
+
+                                int maxSignificant = GetSignificantLimit(currentItem.Type);
+
+                                string digitsOnly = text.Replace("-", string.Empty).Replace(".", string.Empty).Replace(",", string.Empty);
+                                int significantCount = digitsOnly.Length;
+
+                                if ((dotIdx is -1 || cursorPos <= dotIdx) && significantCount >= maxSignificant)
+                                {
+                                    if (dotIdx >= 0 && text.Length > dotIdx + 1)
                                     {
-                                        int firstNonZero = 0;
-                                        while (firstNonZero < rest.Length && rest[firstNonZero] == '0') firstNonZero++;
-                                        rest = firstNonZero == rest.Length ? "0" : rest[firstNonZero..];
-                                    }
-                                    if (rest is "" || rest.StartsWith(".")) rest = "0" + rest;
-
-                                    val = rest.StartsWith("0.") && isNegative ? "-" + rest : rest.StartsWith("0.") ? rest : isNegative ? "-" + rest : rest;
-
-                                    bool userTypingFraction = false;
-                                    int pointPos = val.IndexOf('.');
-                                    if (pointPos >= 0 && (pointPos < val.Length - 1 || endsWithDot))
-                                        userTypingFraction = true;
-
-                                    if (!userTypingFraction)
-                                    {
-                                        parsed = false;
-                                        string format = "0.############################";
-                                        switch (currentItem.Type)
+                                        int lastDigitIdx = text.Length - 1;
+                                        while (lastDigitIdx > dotIdx && !char.IsDigit(text[lastDigitIdx]))
+                                            lastDigitIdx--;
+                                        if (lastDigitIdx > dotIdx)
                                         {
-                                            case EInputMenuItemType.Float:
-                                                parsed = float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float f);
-                                                val = parsed
-                                                    ? float.IsPositiveInfinity(f) ? float.MaxValue.ToString(format, CultureInfo.InvariantCulture) : float.IsNegativeInfinity(f) ? float.MinValue.ToString(format, CultureInfo.InvariantCulture) : f.ToString(format, CultureInfo.InvariantCulture)
-                                                    : isNegative ? float.MinValue.ToString(format, CultureInfo.InvariantCulture) : float.MaxValue.ToString(format, CultureInfo.InvariantCulture);
-                                                break;
-                                            case EInputMenuItemType.Double:
-                                                parsed = double.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out double d);
-                                                val = parsed
-                                                    ? d.ToString(format, CultureInfo.InvariantCulture)
-                                                    : (isNegative ? double.MinValue.ToString(format, CultureInfo.InvariantCulture) : double.MaxValue.ToString(format, CultureInfo.InvariantCulture));
-                                                break;
-                                            case EInputMenuItemType.Decimal:
-                                                parsed = decimal.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal m);
-                                                val = parsed
-                                                    ? m.ToString(format, CultureInfo.InvariantCulture)
-                                                    : (isNegative ? decimal.MinValue.ToString(format, CultureInfo.InvariantCulture) : decimal.MaxValue.ToString(format, CultureInfo.InvariantCulture));
-                                                break;
+                                            _ = inputBuilder.Remove(lastDigitIdx, 1);
+                                            if (cursorPos > lastDigitIdx) cursorPos--;
+                                        }
+
+                                        string newText = inputBuilder.ToString();
+                                        int newDotIdx = newText.IndexOfAny(['.', ',']);
+                                        if (newDotIdx >= 0 && newDotIdx == newText.Length - 1)
+                                        {
+                                            _ = inputBuilder.Remove(newDotIdx, 1);
+                                            if (cursorPos > newDotIdx) cursorPos--;
                                         }
                                     }
-
-                                    int oldCursorPos = cursorPos;
-                                    oldLength = inputBuilder.Length;
-                                    int newLength = val.Length;
-                                    int delta = newLength - oldLength;
-                                    cursorPos = oldCursorPos + delta;
-                                    if (cursorPos < 0) cursorPos = 0;
-                                    if (cursorPos > newLength) cursorPos = newLength;
-
-                                    _ = inputBuilder.Clear();
-                                    _ = inputBuilder.Append(val);
-                                    break;
+                                    else
+                                    {
+                                        continue;
+                                    }
                                 }
+
+                                if (dotIdx >= 0 && cursorPos > dotIdx && significantCount >= maxSignificant)
+                                    continue;
+                            }
+
+                            minusInserted = false;
+                            if ((currentItem.Type is
+                                EInputMenuItemType.Int or EInputMenuItemType.Short or EInputMenuItemType.SByte or
+                                EInputMenuItemType.Float or EInputMenuItemType.Double or EInputMenuItemType.Decimal)
+                                && keyInfo.KeyChar is '-')
+                            {
+                                if (inputBuilder.ToString() is "0" or "" && cursorPos is 0 or 1)
+                                {
+                                    _ = inputBuilder.Clear();
+                                    _ = inputBuilder.Append('-');
+                                    cursorPos = 1;
+                                    minusInserted = true;
+                                }
+                            }
+
+                            if (!minusInserted)
+                            {
+                                List<string> valLines = RenderManager.WrapInputValue(inputBuilder.ToString().Insert(cursorPos, keyInfo.KeyChar.ToString()), promptLen, RenderManager.WindowWidth);
+                                if (valLines.Count + GetMenuItemTop(selected) + promptLines.Count - 1 >= Console.BufferHeight)
+                                    continue;
+                                if (valLines.Any(l => l.Length > RenderManager.WindowWidth))
+                                    continue;
+
+                                _ = inputBuilder.Insert(cursorPos, keyInfo.KeyChar);
+                                cursorPos++;
+                            }
+
+                            string val;
+                            bool isNegative, parsed;
+                            int oldLength;
+                            switch (currentItem.Type)
+                            {
+                                case EInputMenuItemType.Int:
+                                case EInputMenuItemType.Short:
+                                case EInputMenuItemType.SByte:
+                                    {
+                                        val = inputBuilder.ToString();
+                                        if (val is "-")
+                                            break;
+                                        isNegative = val.StartsWith("-");
+                                        string numberPart = val[(isNegative ? 1 : 0)..].TrimStart('0');
+                                        if (numberPart is "" or "0")
+                                            numberPart = "0";
+                                        val = isNegative ? (numberPart is "0" ? "-0" : "-" + numberPart) : numberPart;
+
+                                        if (BigInteger.TryParse(val, out BigInteger bigVal))
+                                        {
+                                            switch (currentItem.Type)
+                                            {
+                                                case EInputMenuItemType.Int:
+                                                    if (bigVal < int.MinValue) bigVal = int.MinValue;
+                                                    if (bigVal > int.MaxValue) bigVal = int.MaxValue;
+                                                    val = ((int)bigVal).ToString();
+                                                    if (isNegative && numberPart is "0") val = "-0";
+                                                    break;
+                                                case EInputMenuItemType.Short:
+                                                    if (bigVal < short.MinValue) bigVal = short.MinValue;
+                                                    if (bigVal > short.MaxValue) bigVal = short.MaxValue;
+                                                    val = ((short)bigVal).ToString();
+                                                    if (isNegative && numberPart is "0") val = "-0";
+                                                    break;
+                                                case EInputMenuItemType.SByte:
+                                                    if (bigVal < sbyte.MinValue) bigVal = sbyte.MinValue;
+                                                    if (bigVal > sbyte.MaxValue) bigVal = sbyte.MaxValue;
+                                                    val = ((sbyte)bigVal).ToString();
+                                                    if (isNegative && numberPart is "0") val = "-0";
+                                                    break;
+                                            }
+                                        }
+
+                                        if (inputBuilder.ToString() is "-")
+                                            break;
+
+                                        int oldCursorPos = cursorPos;
+                                        oldLength = inputBuilder.Length;
+                                        int newLength = val.Length;
+                                        int delta = newLength - oldLength;
+                                        cursorPos = oldCursorPos + delta;
+                                        if (cursorPos < 0) cursorPos = 0;
+                                        if (cursorPos > newLength) cursorPos = newLength;
+
+                                        _ = inputBuilder.Clear();
+                                        _ = inputBuilder.Append(val);
+                                        break;
+                                    }
+                                case EInputMenuItemType.UInt:
+                                case EInputMenuItemType.UShort:
+                                case EInputMenuItemType.Byte:
+                                    {
+                                        val = inputBuilder.ToString().TrimStart('0');
+                                        if (val is "") val = "0";
+                                        if (BigInteger.TryParse(val, out BigInteger bigVal))
+                                        {
+                                            switch (currentItem.Type)
+                                            {
+                                                case EInputMenuItemType.UInt:
+                                                    if (bigVal < uint.MinValue) bigVal = uint.MinValue;
+                                                    if (bigVal > uint.MaxValue) bigVal = uint.MaxValue;
+                                                    val = ((uint)bigVal).ToString();
+                                                    break;
+                                                case EInputMenuItemType.UShort:
+                                                    if (bigVal < ushort.MinValue) bigVal = ushort.MinValue;
+                                                    if (bigVal > ushort.MaxValue) bigVal = ushort.MaxValue;
+                                                    val = ((ushort)bigVal).ToString();
+                                                    break;
+                                                case EInputMenuItemType.Byte:
+                                                    if (bigVal < byte.MinValue) bigVal = byte.MinValue;
+                                                    if (bigVal > byte.MaxValue) bigVal = byte.MaxValue;
+                                                    val = ((byte)bigVal).ToString();
+                                                    break;
+                                            }
+                                        }
+                                        int oldCursorPos = cursorPos;
+                                        oldLength = inputBuilder.Length;
+                                        int newLength = val.Length;
+                                        int delta = newLength - oldLength;
+                                        cursorPos = oldCursorPos + delta;
+                                        if (cursorPos < 0) cursorPos = 0;
+                                        if (cursorPos > newLength) cursorPos = newLength;
+
+                                        _ = inputBuilder.Clear();
+                                        _ = inputBuilder.Append(val);
+                                        break;
+                                    }
+                                case EInputMenuItemType.Float:
+                                case EInputMenuItemType.Double:
+                                case EInputMenuItemType.Decimal:
+                                    {
+                                        val = inputBuilder.ToString();
+
+                                        bool endsWithDot = val.EndsWith(".") || val.EndsWith(",");
+
+                                        isNegative = val.StartsWith("-");
+                                        string rest = isNegative ? val[1..] : val;
+                                        rest = rest.Replace(',', '.');
+
+                                        int dotIndex = rest.IndexOf('.');
+                                        if (dotIndex >= 0)
+                                            rest = rest[..(dotIndex + 1)] + rest[(dotIndex + 1)..].Replace(".", string.Empty);
+
+                                        if (rest.Length > 1 && rest.StartsWith("0") && rest[1] is '.')
+                                        {
+                                            int firstNonZero = 0;
+                                            while (firstNonZero < rest.Length && rest[firstNonZero] == '0') firstNonZero++;
+                                            rest = firstNonZero == rest.Length ? "0" : rest[firstNonZero..];
+                                        }
+                                        if (rest is "" || rest.StartsWith(".")) rest = "0" + rest;
+
+                                        val = rest.StartsWith("0.") && isNegative ? "-" + rest : rest.StartsWith("0.") ? rest : isNegative ? "-" + rest : rest;
+
+                                        bool userTypingFraction = false;
+                                        int pointPos = val.IndexOf('.');
+                                        if (pointPos >= 0 && (pointPos < val.Length - 1 || endsWithDot))
+                                            userTypingFraction = true;
+
+                                        if (!userTypingFraction)
+                                        {
+                                            parsed = false;
+                                            string format = "0.############################";
+                                            switch (currentItem.Type)
+                                            {
+                                                case EInputMenuItemType.Float:
+                                                    parsed = float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float f);
+                                                    val = parsed
+                                                        ? float.IsPositiveInfinity(f) ? float.MaxValue.ToString(format, CultureInfo.InvariantCulture) : float.IsNegativeInfinity(f) ? float.MinValue.ToString(format, CultureInfo.InvariantCulture) : f.ToString(format, CultureInfo.InvariantCulture)
+                                                        : isNegative ? float.MinValue.ToString(format, CultureInfo.InvariantCulture) : float.MaxValue.ToString(format, CultureInfo.InvariantCulture);
+                                                    break;
+                                                case EInputMenuItemType.Double:
+                                                    parsed = double.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out double d);
+                                                    val = parsed
+                                                        ? d.ToString(format, CultureInfo.InvariantCulture)
+                                                        : (isNegative ? double.MinValue.ToString(format, CultureInfo.InvariantCulture) : double.MaxValue.ToString(format, CultureInfo.InvariantCulture));
+                                                    break;
+                                                case EInputMenuItemType.Decimal:
+                                                    parsed = decimal.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal m);
+                                                    val = parsed
+                                                        ? m.ToString(format, CultureInfo.InvariantCulture)
+                                                        : (isNegative ? decimal.MinValue.ToString(format, CultureInfo.InvariantCulture) : decimal.MaxValue.ToString(format, CultureInfo.InvariantCulture));
+                                                    break;
+                                            }
+                                        }
+
+                                        int oldCursorPos = cursorPos;
+                                        oldLength = inputBuilder.Length;
+                                        int newLength = val.Length;
+                                        int delta = newLength - oldLength;
+                                        cursorPos = oldCursorPos + delta;
+                                        if (cursorPos < 0) cursorPos = 0;
+                                        if (cursorPos > newLength) cursorPos = newLength;
+
+                                        _ = inputBuilder.Clear();
+                                        _ = inputBuilder.Append(val);
+                                        break;
+                                    }
+                            }
+                            MenuItems[selected].InputValue = inputBuilder.ToString();
                         }
-                        MenuItems[selected].InputValue = inputBuilder.ToString();
                     }
                 }
 
+                oldHeight = menuHeight;
                 Redraw();
+                if (menuHeight < oldHeight)
+                    RenderManager.ClearArea(menuTop + menuHeight, oldHeight - menuHeight, RenderManager.WindowWidth);
 
-                savedHorizontalColumn = RenderManager.UpdateCursorPosition(inputBuilder.ToString(), cursorPos, promptLines, GetMenuItemTop(selected), RenderManager.WindowWidth);
+                if (currentItem.Type != EInputMenuItemType.Bool)
+                    savedHorizontalColumn = RenderManager.UpdateCursorPosition(inputBuilder.ToString(), cursorPos, promptLines, GetMenuItemTop(selected), RenderManager.WindowWidth);
 
                 if (breakInnerLoop)
                     break;
@@ -620,18 +656,17 @@ public class InputMenu()
     #region Строитель
     /// <summary>Добавляет готовый элемент меню, проверяя уникальность его идентификатора.<br/>Если идентификатор не указан, он будет сгенерирован автоматически.</summary>
     /// <param name="item">Экземпляр <see cref="InputMenuItem"/> для добавления.</param>
-    /// <param name="type">Тип вводимого значения для элемента меню. По умолчанию — <see cref="EInputMenuItemType.String"/>.</param>
     /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
     /// <exception cref="ArgumentException">Выбрасывается, если элемент с таким идентификатором уже существует в меню.</exception>
-    public InputMenu AddMenuItem(InputMenuItem item, EInputMenuItemType type = EInputMenuItemType.String)
+    internal InputMenu AddMenuItem(InputMenuItem item, string? id = null)
     {
-        if (string.IsNullOrEmpty(item.Id))
+        if (string.IsNullOrEmpty(item.Id = id))
             item.Id = nextDefaultId.ToString();
 
         if (!usedIds.Add(item.Id))
             throw new ArgumentException($"Элемент с ID '{item.Id}' уже существует в этом меню.", nameof(item));
 
-        MenuItems.Add(item.SetInputType(type));
+        MenuItems.Add(item);
 
         if (int.TryParse(item.Id, out int numericId))
             nextDefaultId = Math.Max(nextDefaultId, numericId + 1);
@@ -645,9 +680,78 @@ public class InputMenu()
     /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
     /// <param name="defaultValue">Начальное значение поля ввода. По умолчанию — пустая строка.</param>
     /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
-    /// <param name="type">Тип вводимого значения (<see cref="EInputMenuItemType"/>). По умолчанию — строка.</param>
     /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
-    public InputMenu AddMenuItem(string text, string? defaultValue = "", string? id = null, EInputMenuItemType type = EInputMenuItemType.String) => AddMenuItem(new InputMenuItem(text, defaultValue, id), type);
+    public InputMenu AddMenuItem(string text, string defaultValue = "", string? id = null) => AddMenuItem(new InputMenuItem(text, defaultValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, идентификатор и тип поля.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода. По умолчанию — 0.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, int defaultValue = default, string? id = null) => AddMenuItem(new InputMenuItem(text, defaultValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, идентификатор и тип поля.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода. По умолчанию — 0.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, uint defaultValue = default, string? id = null) => AddMenuItem(new InputMenuItem(text, defaultValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, идентификатор и тип поля.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода. По умолчанию — 0.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, short defaultValue = default, string? id = null) => AddMenuItem(new InputMenuItem(text, defaultValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, идентификатор и тип поля.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода. По умолчанию — 0.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, ushort defaultValue = default, string? id = null) => AddMenuItem(new InputMenuItem(text, defaultValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, идентификатор и тип поля.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода. По умолчанию — 0.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, byte defaultValue = default, string? id = null) => AddMenuItem(new InputMenuItem(text, defaultValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, идентификатор и тип поля.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода. По умолчанию — 0.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, sbyte defaultValue = default, string? id = null) => AddMenuItem(new InputMenuItem(text, defaultValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, идентификатор и тип поля.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода. По умолчанию — 0.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, float defaultValue = default, string? id = null) => AddMenuItem(new InputMenuItem(text, defaultValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, идентификатор и тип поля.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода. По умолчанию — 0.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, double defaultValue = default, string? id = null) => AddMenuItem(new InputMenuItem(text, defaultValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, идентификатор и тип поля.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода. По умолчанию — 0.0d.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, decimal defaultValue = default, string? id = null) => AddMenuItem(new InputMenuItem(text, defaultValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, идентификатор и тип поля.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода. По умолчанию — False.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, bool defaultValue = default, string? id = null) => AddMenuItem(new InputMenuItem(text, defaultValue), id);
 
     /// <summary>Заменяет заголовок меню на новый.<br/>Позволяет динамически изменять отображаемый заголовок.</summary>
     /// <param name="newTitle">Новый заголовок меню.</param>

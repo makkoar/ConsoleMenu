@@ -1,20 +1,82 @@
 ﻿namespace ConsoleMenu;
 
 /// <summary>Класс, представляющий один элемент для ввода данных в консольном меню.</summary>
-public class InputMenuItem(string text, string? defaultValue = "", string? id = null)
+public class InputMenuItem
 {
+    #region Конструкторы
+    internal InputMenuItem(string text) => Text = text;
+
+    public InputMenuItem(string text, string defaultValue = "") : this(text)
+    {
+        InputValue = defaultValue;
+        Type = EInputMenuItemType.String;
+    }
+
+    public InputMenuItem(string text, int defaultValue = default) : this(text)
+    {
+        InputValue = defaultValue.ToString();
+        Type = EInputMenuItemType.Int;
+    }
+
+    public InputMenuItem(string text, uint defaultValue = default) : this(text)
+    {
+        InputValue = defaultValue.ToString();
+        Type = EInputMenuItemType.UInt;
+    }
+    public InputMenuItem(string text, short defaultValue = default) : this(text)
+    {
+        InputValue = defaultValue.ToString();
+        Type = EInputMenuItemType.Short;
+    }
+    public InputMenuItem(string text, ushort defaultValue = default) : this(text)
+    {
+        InputValue = defaultValue.ToString();
+        Type = EInputMenuItemType.UShort;
+    }
+    public InputMenuItem(string text, byte defaultValue = default) : this(text)
+    {
+        InputValue = defaultValue.ToString();
+        Type = EInputMenuItemType.Byte;
+    }
+    public InputMenuItem(string text, sbyte defaultValue = default) : this(text)
+    {
+        InputValue = defaultValue.ToString();
+        Type = EInputMenuItemType.SByte;
+    }
+    public InputMenuItem(string text, float defaultValue = default) : this(text)
+    {
+        InputValue = defaultValue.ToString(CultureInfo.InvariantCulture);
+        Type = EInputMenuItemType.Float;
+    }
+    public InputMenuItem(string text, double defaultValue = default) : this(text)
+    {
+        InputValue = defaultValue.ToString(CultureInfo.InvariantCulture);
+        Type = EInputMenuItemType.Double;
+    }
+    public InputMenuItem(string text, decimal defaultValue = default) : this(text)
+    {
+        InputValue = defaultValue.ToString(CultureInfo.InvariantCulture);
+        Type = EInputMenuItemType.Decimal;
+    }
+    public InputMenuItem(string text, bool defaultValue = default) : this(text)
+    {
+        InputValue = defaultValue.ToString();
+        Type = EInputMenuItemType.Bool;
+    }
+    #endregion
+
     #region Поля и свойства
     /// <summary>Уникальный идентификатор элемента меню.</summary>
-    public string Id { get; internal set; } = id ?? string.Empty;
+    public string? Id { get; internal set; }
 
     /// <summary>Текст-приглашение для ввода, который будет отображён на экране (например, "Введите ваше имя").</summary>
-    public string Text { get; set; } = text;
+    public string Text { get; set; }
 
     /// <summary>Значение, которое будет использоваться как значение по умолчанию,<br/>а также будет содержать итоговый ввод пользователя.</summary>
-    public string? InputValue { get; set; } = defaultValue;
+    public string InputValue { get; internal set; }
 
     /// <summary>Тип значения, ожидаемого для этого элемента меню.</summary>
-    public EInputMenuItemType Type { get; set; } = EInputMenuItemType.String;
+    internal EInputMenuItemType Type { get; set; }
     #endregion
 
     #region Вспомогательные методы для получения значений
@@ -89,17 +151,6 @@ public class InputMenuItem(string text, string? defaultValue = "", string? id = 
 
     /// <summary>Преобразует введённое значение в <see cref="decimal"/> или выбрасывает исключение.</summary>
     public decimal GetDecimal() => decimal.TryParse(InputValue, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal value) ? value : throw new FormatException($"Значение \"{InputValue}\" не может быть преобразовано в decimal.");
-    #endregion
-
-    #region Строитель
-    /// <summary>Устанавливает тип ввода для элемента меню.</summary>
-    /// <param name="type">Тип ввода, который будет установлен.</param>
-    /// <returns>Текущий объект <see cref="InputMenuItem"/> с обновлённым типом ввода.</returns>
-    public InputMenuItem SetInputType(EInputMenuItemType type)
-    {
-        Type = type;
-        return this;
-    }
     #endregion
 
     #region Переопределённые методы
