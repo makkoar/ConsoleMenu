@@ -45,15 +45,14 @@ public class SelectMenu()
     {
         if (clear) Console.Clear();
 
-        RenderManager renderManager = new();
         ushort selected = startIndex;
         int menuTop = Console.CursorTop;
         int menuHeight = MenuItems.Count + 1;
-        renderManager.SetCursorVisibility(false);
+        RenderManager.SetCursorVisibility(false);
 
         while (true)
         {
-            renderManager.DrawSelectMenu(Title, MenuItems, selected, Theme, menuTop);
+            RenderManager.DrawSelectMenu(Title, MenuItems, selected, Theme, menuTop);
 
             ConsoleKeyInfo keyInfo = Console.ReadKey(true);
             switch (keyInfo.Key)
@@ -63,9 +62,9 @@ public class SelectMenu()
                 case ConsoleKey.Enter:
                 case ConsoleKey.Escape:
                     {
-                        renderManager.ClearArea(menuTop, menuHeight, renderManager.WindowWidth);
-                        renderManager.SetCursorVisibility(true);
-                        renderManager.ResetColor();
+                        RenderManager.ClearArea(menuTop, menuHeight, RenderManager.WindowWidth);
+                        RenderManager.SetCursorVisibility(true);
+                        RenderManager.ResetColor();
 
                         if (keyInfo.Key is ConsoleKey.Enter && MenuItems.Count > 0 && MenuItems[selected].Function is not null)
                             MenuItems[selected].Function!();
