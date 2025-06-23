@@ -3,6 +3,20 @@
 /// <summary>Класс, представляющий один элемент для ввода данных в консольном меню <see cref="InputMenu"/>.<br/>Содержит текст-приглашение, тип ожидаемого значения и само значение, введённое пользователем.</summary>
 public class InputMenuItem
 {
+    #region Поля и свойства
+    /// <summary>Уникальный идентификатор элемента меню.<br/>Устанавливается автоматически или вручную через <see cref="InputMenu.AddMenuItem(InputMenuItem, string)"/>.</summary>
+    public string? Id { get; internal set; }
+
+    /// <summary>Текст-приглашение для ввода, который будет отображён на экране (например, "Введите ваше имя").</summary>
+    public string Text { get; set; }
+
+    /// <summary>Строковое представление значения элемента.<br/>Изначально содержит значение по умолчанию, а после работы меню — итоговый ввод пользователя.<br/>Изменяется внутри библиотеки во время работы <see cref="InputMenu"/>.</summary>
+    public string InputValue { get; internal set; }
+
+    /// <summary>Тип значения, ожидаемого для этого элемента меню.<br/>Определяется конструктором на основе типа значения по умолчанию.</summary>
+    internal EInputMenuItemType Type { get; set; }
+    #endregion
+
     #region Конструкторы
     /// <summary>Инициализирует новый экземпляр класса <see cref="InputMenuItem"/> с указанным текстом.<br/>Этот конструктор предназначен для внутреннего использования.</summary>
     /// <param name="text">Текст-приглашение для ввода.</param>
@@ -98,20 +112,6 @@ public class InputMenuItem
         InputValue = defaultValue.ToString();
         Type = EInputMenuItemType.Bool;
     }
-    #endregion
-
-    #region Поля и свойства
-    /// <summary>Уникальный идентификатор элемента меню.<br/>Устанавливается автоматически или вручную через <see cref="InputMenu.AddMenuItem(InputMenuItem, string)"/>.</summary>
-    public string? Id { get; internal set; }
-
-    /// <summary>Текст-приглашение для ввода, который будет отображён на экране (например, "Введите ваше имя").</summary>
-    public string Text { get; set; }
-
-    /// <summary>Строковое представление значения элемента.<br/>Изначально содержит значение по умолчанию, а после работы меню — итоговый ввод пользователя.<br/>Изменяется внутри библиотеки во время работы <see cref="InputMenu"/>.</summary>
-    public string InputValue { get; internal set; }
-
-    /// <summary>Тип значения, ожидаемого для этого элемента меню.<br/>Определяется конструктором на основе типа значения по умолчанию.</summary>
-    internal EInputMenuItemType Type { get; set; }
     #endregion
 
     #region Строитель
