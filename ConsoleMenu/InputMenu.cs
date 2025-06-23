@@ -281,6 +281,14 @@ public class InputMenu()
                         }
                         else cursorPos++;
                 }
+                else if (keyInfo.Key == ConsoleKey.Home)
+                {
+                    cursorPos = 0;
+                }
+                else if (keyInfo.Key == ConsoleKey.End)
+                {
+                    cursorPos = inputBuilder.Length;
+                }
                 else if (!char.IsControl(keyInfo.KeyChar))
                 {
                     if (currentItem.Type is EInputMenuItemType.Bool)
