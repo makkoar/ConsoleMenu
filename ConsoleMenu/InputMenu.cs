@@ -260,12 +260,26 @@ public class InputMenu()
                 else if (keyInfo.Key is ConsoleKey.LeftArrow)
                 {
                     if (cursorPos > 0)
-                        cursorPos--;
+                        if ((keyInfo.Modifiers & ConsoleModifiers.Control) is not 0)
+                        {
+                            int p = cursorPos - 1;
+                            while (p > 0 && char.IsWhiteSpace(inputBuilder[p])) p--;
+                            while (p > 0 && !char.IsWhiteSpace(inputBuilder[p - 1])) p--;
+                            cursorPos = p;
+                        }
+                        else cursorPos--;
                 }
                 else if (keyInfo.Key is ConsoleKey.RightArrow)
                 {
                     if (cursorPos < inputBuilder.Length)
-                        cursorPos++;
+                        if ((keyInfo.Modifiers & ConsoleModifiers.Control) is not 0)
+                        {
+                            int p = cursorPos;
+                            while (p < inputBuilder.Length && char.IsWhiteSpace(inputBuilder[p])) p++;
+                            while (p < inputBuilder.Length && !char.IsWhiteSpace(inputBuilder[p])) p++;
+                            cursorPos = p;
+                        }
+                        else cursorPos++;
                 }
                 else if (!char.IsControl(keyInfo.KeyChar))
                 {
