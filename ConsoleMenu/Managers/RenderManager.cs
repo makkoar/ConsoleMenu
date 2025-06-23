@@ -1,6 +1,4 @@
-﻿using ConsoleMenu.Models;
-
-namespace ConsoleMenu.Managers;
+﻿namespace ConsoleMenu.Managers;
 
 /// <summary>Управляет всеми операциями отрисовки и компоновки элементов меню в консоли.</summary>
 /// <remarks>Этот статический класс инкапсулирует логику взаимодействия с <see cref="System.Console"/>,<br/> предоставляя высокоуровневые методы для отрисовки заголовков, пунктов меню, полей ввода,<br/> а также утилиты для компоновки текста.</remarks>
