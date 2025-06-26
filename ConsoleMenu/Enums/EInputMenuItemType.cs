@@ -23,6 +23,10 @@ internal enum EInputMenuItemType : byte
     Double,
     /// <summary>Тип ввода для десятичного числа.</summary>
     Decimal,
+    /// <summary>Длинный целочисленный тип ввода.</summary>
+    Long,
+    /// <summary>Длинный целочисленный тип ввода без знака.</summary>
+    ULong,
     /// <summary>Логический тип ввода.</summary>
     Bool
 }

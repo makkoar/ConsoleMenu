@@ -281,11 +281,11 @@ public class InputMenu()
                         }
                         else cursorPos++;
                 }
-                else if (keyInfo.Key == ConsoleKey.Home)
+                else if (keyInfo.Key is ConsoleKey.Home)
                 {
                     cursorPos = 0;
                 }
-                else if (keyInfo.Key == ConsoleKey.End)
+                else if (keyInfo.Key is ConsoleKey.End)
                 {
                     cursorPos = inputBuilder.Length;
                 }
@@ -335,6 +335,7 @@ public class InputMenu()
                             case EInputMenuItemType.String:
                                 allowInput = true;
                                 break;
+                            case EInputMenuItemType.Long:
                             case EInputMenuItemType.Int:
                             case EInputMenuItemType.Short:
                             case EInputMenuItemType.SByte:
@@ -343,6 +344,7 @@ public class InputMenu()
                                 else if (keyInfo.KeyChar is '-' && cursorPos is 0 && !inputBuilder.ToString().Contains('-'))
                                     allowInput = true;
                                 break;
+                            case EInputMenuItemType.ULong:
                             case EInputMenuItemType.UInt:
                             case EInputMenuItemType.UShort:
                             case EInputMenuItemType.Byte:
@@ -435,7 +437,7 @@ public class InputMenu()
 
                             minusInserted = false;
                             if ((currentItem.Type is
-                                EInputMenuItemType.Int or EInputMenuItemType.Short or EInputMenuItemType.SByte or
+                                EInputMenuItemType.Long or EInputMenuItemType.Int or EInputMenuItemType.Short or EInputMenuItemType.SByte or
                                 EInputMenuItemType.Float or EInputMenuItemType.Double or EInputMenuItemType.Decimal)
                                 && keyInfo.KeyChar is '-')
                             {
@@ -465,6 +467,7 @@ public class InputMenu()
                             int oldLength;
                             switch (currentItem.Type)
                             {
+                                case EInputMenuItemType.Long:
                                 case EInputMenuItemType.Int:
                                 case EInputMenuItemType.Short:
                                 case EInputMenuItemType.SByte:
@@ -480,8 +483,18 @@ public class InputMenu()
 
                                         if (BigInteger.TryParse(val, out BigInteger bigVal))
                                         {
+                                            if (currentItem.MinValue != null && BigInteger.TryParse(currentItem.MinValue, out BigInteger min))
+                                                if (bigVal < min) bigVal = min;
+                                            if (currentItem.MaxValue != null && BigInteger.TryParse(currentItem.MaxValue, out BigInteger max))
+                                                if (bigVal > max) bigVal = max;
                                             switch (currentItem.Type)
                                             {
+                                                case EInputMenuItemType.Long:
+                                                    if (bigVal < long.MinValue) bigVal = long.MinValue;
+                                                    if (bigVal > long.MaxValue) bigVal = long.MaxValue;
+                                                    val = ((long)bigVal).ToString();
+                                                    if (isNegative && numberPart is "0") val = "-0";
+                                                    break;
                                                 case EInputMenuItemType.Int:
                                                     if (bigVal < int.MinValue) bigVal = int.MinValue;
                                                     if (bigVal > int.MaxValue) bigVal = int.MaxValue;
@@ -518,6 +531,7 @@ public class InputMenu()
                                         _ = inputBuilder.Append(val);
                                         break;
                                     }
+                                case EInputMenuItemType.ULong:
                                 case EInputMenuItemType.UInt:
                                 case EInputMenuItemType.UShort:
                                 case EInputMenuItemType.Byte:
@@ -526,8 +540,17 @@ public class InputMenu()
                                         if (val is "") val = "0";
                                         if (BigInteger.TryParse(val, out BigInteger bigVal))
                                         {
+                                            if (currentItem.MinValue != null && BigInteger.TryParse(currentItem.MinValue, out BigInteger min))
+                                                if (bigVal < min) bigVal = min;
+                                            if (currentItem.MaxValue != null && BigInteger.TryParse(currentItem.MaxValue, out BigInteger max))
+                                                if (bigVal > max) bigVal = max;
                                             switch (currentItem.Type)
                                             {
+                                                case EInputMenuItemType.ULong:
+                                                    if (bigVal < ulong.MinValue) bigVal = ulong.MinValue;
+                                                    if (bigVal > ulong.MaxValue) bigVal = ulong.MaxValue;
+                                                    val = ((ulong)bigVal).ToString();
+                                                    break;
                                                 case EInputMenuItemType.UInt:
                                                     if (bigVal < uint.MinValue) bigVal = uint.MinValue;
                                                     if (bigVal > uint.MaxValue) bigVal = uint.MaxValue;
@@ -770,6 +793,76 @@ public class InputMenu()
     /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
     /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
     public InputMenu AddMenuItem(string text, bool defaultValue = default, string? id = null) => AddMenuItem(new InputMenuItem(text, defaultValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, минимальное и максимальное значения, идентификатор и тип поля.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода.</param>
+    /// <param name="minValue">Минимально допустимое значение.</param>
+    /// <param name="maxValue">Максимально допустимое значение.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, int defaultValue, int minValue, int maxValue, string? id = null)
+        => AddMenuItem(new InputMenuItem(text, defaultValue, minValue, maxValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, минимальное и максимальное значения, идентификатор и тип поля.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода.</param>
+    /// <param name="minValue">Минимально допустимое значение.</param>
+    /// <param name="maxValue">Максимально допустимое значение.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, uint defaultValue, uint minValue, uint maxValue, string? id = null)
+        => AddMenuItem(new InputMenuItem(text, defaultValue, minValue, maxValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, минимальное и максимальное значения, идентификатор и тип поля (short).</summary>
+    public InputMenu AddMenuItem(string text, short defaultValue, short minValue, short maxValue, string? id = null)
+        => AddMenuItem(new InputMenuItem(text, defaultValue, minValue, maxValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, минимальное и максимальное значения, идентификатор и тип поля (ushort).</summary>
+    public InputMenu AddMenuItem(string text, ushort defaultValue, ushort minValue, ushort maxValue, string? id = null)
+        => AddMenuItem(new InputMenuItem(text, defaultValue, minValue, maxValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, минимальное и максимальное значения, идентификатор и тип поля (byte).</summary>
+    public InputMenu AddMenuItem(string text, byte defaultValue, byte minValue, byte maxValue, string? id = null)
+        => AddMenuItem(new InputMenuItem(text, defaultValue, minValue, maxValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, минимальное и максимальное значения, идентификатор и тип поля (sbyte).</summary>
+    public InputMenu AddMenuItem(string text, sbyte defaultValue, sbyte minValue, sbyte maxValue, string? id = null)
+        => AddMenuItem(new InputMenuItem(text, defaultValue, minValue, maxValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, идентификатор и тип поля.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода. По умолчанию — 0.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, long defaultValue = default, string? id = null) => AddMenuItem(new InputMenuItem(text, defaultValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, идентификатор и тип поля.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода. По умолчанию — 0.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, ulong defaultValue = default, string? id = null) => AddMenuItem(new InputMenuItem(text, defaultValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, минимальное и максимальное значения, идентификатор и тип поля.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода.</param>
+    /// <param name="minValue">Минимально допустимое значение.</param>
+    /// <param name="maxValue">Максимально допустимое значение.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, long defaultValue, long minValue, long maxValue, string? id = null)
+        => AddMenuItem(new InputMenuItem(text, defaultValue, minValue, maxValue), id);
+
+    /// <summary>Добавляет новый элемент в меню ввода с заданными параметрами.<br/>Позволяет указать текст-приглашение, значение по умолчанию, минимальное и максимальное значения, идентификатор и тип поля.</summary>
+    /// <param name="text">Текст-приглашение для добавляемого элемента.</param>
+    /// <param name="defaultValue">Начальное значение поля ввода.</param>
+    /// <param name="minValue">Минимально допустимое значение.</param>
+    /// <param name="maxValue">Максимально допустимое значение.</param>
+    /// <param name="id">Необязательный уникальный идентификатор. Если не указан, будет сгенерирован автоматически.</param>
+    /// <returns>Текущий экземпляр <see cref="InputMenu"/> с добавленным элементом для дальнейшей настройки.</returns>
+    public InputMenu AddMenuItem(string text, ulong defaultValue, ulong minValue, ulong maxValue, string? id = null)
+        => AddMenuItem(new InputMenuItem(text, defaultValue, minValue, maxValue), id);
 
     /// <summary>Заменяет заголовок меню на новый.<br/>Позволяет динамически изменять отображаемый заголовок.</summary>
     /// <param name="newTitle">Новый заголовок меню.</param>

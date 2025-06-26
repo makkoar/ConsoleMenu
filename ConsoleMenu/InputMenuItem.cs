@@ -15,6 +15,12 @@ public class InputMenuItem
 
     /// <summary>Тип значения, ожидаемого для этого элемента меню.<br/>Определяется конструктором на основе типа значения по умолчанию.</summary>
     internal EInputMenuItemType Type { get; set; }
+
+    /// <summary>Минимально допустимое значение (только для числовых типов).</summary>
+    public string? MinValue { get; set; }
+
+    /// <summary>Максимально допустимое значение (только для числовых типов).</summary>
+    public string? MaxValue { get; set; }
     #endregion
 
     #region Конструкторы
@@ -40,6 +46,17 @@ public class InputMenuItem
         Type = EInputMenuItemType.Int;
     }
 
+    /// <summary>Инициализирует новый элемент меню для ввода целочисленного значения (<see cref="int"/>) с ограничениями.</summary>
+    /// <param name="text">Текст-приглашение для ввода.</param>
+    /// <param name="defaultValue">Начальное значение поля.</param>
+    /// <param name="minValue">Минимально допустимое значение.</param>
+    /// <param name="maxValue">Максимально допустимое значение.</param>
+    public InputMenuItem(string text, int defaultValue, int minValue, int maxValue) : this(text, defaultValue)
+    {
+        MinValue = minValue.ToString();
+        MaxValue = maxValue.ToString();
+    }
+
     /// <summary>Инициализирует новый элемент меню для ввода беззнакового целочисленного значения (<see cref="uint"/>).</summary>
     /// <param name="text">Текст-приглашение для ввода.</param>
     /// <param name="defaultValue">Начальное значение поля.</param>
@@ -48,6 +65,18 @@ public class InputMenuItem
         InputValue = defaultValue.ToString();
         Type = EInputMenuItemType.UInt;
     }
+
+    /// <summary>Инициализирует новый элемент меню для ввода беззнакового целочисленного значения (<see cref="uint"/>) с ограничениями.</summary>
+    /// <param name="text">Текст-приглашение для ввода.</param>
+    /// <param name="defaultValue">Начальное значение поля.</param>
+    /// <param name="minValue">Минимально допустимое значение.</param>
+    /// <param name="maxValue">Максимально допустимое значение.</param>
+    public InputMenuItem(string text, uint defaultValue, uint minValue, uint maxValue) : this(text, defaultValue)
+    {
+        MinValue = minValue.ToString();
+        MaxValue = maxValue.ToString();
+    }
+
     /// <summary>Инициализирует новый элемент меню для ввода короткого целочисленного значения (<see cref="short"/>).</summary>
     /// <param name="text">Текст-приглашение для ввода.</param>
     /// <param name="defaultValue">Начальное значение поля.</param>
@@ -56,6 +85,18 @@ public class InputMenuItem
         InputValue = defaultValue.ToString();
         Type = EInputMenuItemType.Short;
     }
+
+    /// <summary>Инициализирует новый элемент меню для ввода короткого целочисленного значения (<see cref="short"/>) с ограничениями.</summary>
+    /// <param name="text">Текст-приглашение для ввода.</param>
+    /// <param name="defaultValue">Начальное значение поля.</param>
+    /// <param name="minValue">Минимально допустимое значение.</param>
+    /// <param name="maxValue">Максимально допустимое значение.</param>
+    public InputMenuItem(string text, short defaultValue, short minValue, short maxValue) : this(text, defaultValue)
+    {
+        MinValue = minValue.ToString();
+        MaxValue = maxValue.ToString();
+    }
+
     /// <summary>Инициализирует новый элемент меню для ввода беззнакового короткого целочисленного значения (<see cref="ushort"/>).</summary>
     /// <param name="text">Текст-приглашение для ввода.</param>
     /// <param name="defaultValue">Начальное значение поля.</param>
@@ -64,6 +105,18 @@ public class InputMenuItem
         InputValue = defaultValue.ToString();
         Type = EInputMenuItemType.UShort;
     }
+
+    /// <summary>Инициализирует новый элемент меню для ввода беззнакового короткого целочисленного значения (<see cref="ushort"/>) с ограничениями.</summary>
+    /// <param name="text">Текст-приглашение для ввода.</param>
+    /// <param name="defaultValue">Начальное значение поля.</param>
+    /// <param name="minValue">Минимально допустимое значение.</param>
+    /// <param name="maxValue">Максимально допустимое значение.</param>
+    public InputMenuItem(string text, ushort defaultValue, ushort minValue, ushort maxValue) : this(text, defaultValue)
+    {
+        MinValue = minValue.ToString();
+        MaxValue = maxValue.ToString();
+    }
+
     /// <summary>Инициализирует новый элемент меню для ввода байтового значения (<see cref="byte"/>).</summary>
     /// <param name="text">Текст-приглашение для ввода.</param>
     /// <param name="defaultValue">Начальное значение поля.</param>
@@ -72,6 +125,18 @@ public class InputMenuItem
         InputValue = defaultValue.ToString();
         Type = EInputMenuItemType.Byte;
     }
+
+    /// <summary>Инициализирует новый элемент меню для ввода байтового значения (<see cref="byte"/>) с ограничениями.</summary>
+    /// <param name="text">Текст-приглашение для ввода.</param>
+    /// <param name="defaultValue">Начальное значение поля.</param>
+    /// <param name="minValue">Минимально допустимое значение.</param>
+    /// <param name="maxValue">Максимально допустимое значение.</param>
+    public InputMenuItem(string text, byte defaultValue, byte minValue, byte maxValue) : this(text, defaultValue)
+    {
+        MinValue = minValue.ToString();
+        MaxValue = maxValue.ToString();
+    }
+
     /// <summary>Инициализирует новый элемент меню для ввода знакового байтового значения (<see cref="sbyte"/>).</summary>
     /// <param name="text">Текст-приглашение для ввода.</param>
     /// <param name="defaultValue">Начальное значение поля.</param>
@@ -80,6 +145,18 @@ public class InputMenuItem
         InputValue = defaultValue.ToString();
         Type = EInputMenuItemType.SByte;
     }
+
+    /// <summary>Инициализирует новый элемент меню для ввода знакового байтового значения (<see cref="sbyte"/>) с ограничениями.</summary>
+    /// <param name="text">Текст-приглашение для ввода.</param>
+    /// <param name="defaultValue">Начальное значение поля.</param>
+    /// <param name="minValue">Минимально допустимое значение.</param>
+    /// <param name="maxValue">Максимально допустимое значение.</param>
+    public InputMenuItem(string text, sbyte defaultValue, sbyte minValue, sbyte maxValue) : this(text, defaultValue)
+    {
+        MinValue = minValue.ToString();
+        MaxValue = maxValue.ToString();
+    }
+
     /// <summary>Инициализирует новый элемент меню для ввода числа с плавающей точкой (<see cref="float"/>).</summary>
     /// <param name="text">Текст-приглашение для ввода.</param>
     /// <param name="defaultValue">Начальное значение поля.</param>
@@ -88,6 +165,7 @@ public class InputMenuItem
         InputValue = defaultValue.ToString(CultureInfo.InvariantCulture);
         Type = EInputMenuItemType.Float;
     }
+
     /// <summary>Инициализирует новый элемент меню для ввода числа с плавающей точкой двойной точности (<see cref="double"/>).</summary>
     /// <param name="text">Текст-приглашение для ввода.</param>
     /// <param name="defaultValue">Начальное значение поля.</param>
@@ -96,6 +174,7 @@ public class InputMenuItem
         InputValue = defaultValue.ToString(CultureInfo.InvariantCulture);
         Type = EInputMenuItemType.Double;
     }
+
     /// <summary>Инициализирует новый элемент меню для ввода десятичного числа (<see cref="decimal"/>).</summary>
     /// <param name="text">Текст-приглашение для ввода.</param>
     /// <param name="defaultValue">Начальное значение поля.</param>
@@ -104,6 +183,7 @@ public class InputMenuItem
         InputValue = defaultValue.ToString(CultureInfo.InvariantCulture);
         Type = EInputMenuItemType.Decimal;
     }
+
     /// <summary>Инициализирует новый элемент меню для ввода логического значения (<see cref="bool"/>).</summary>
     /// <param name="text">Текст-приглашение для ввода.</param>
     /// <param name="defaultValue">Начальное значение поля.</param>
@@ -111,6 +191,46 @@ public class InputMenuItem
     {
         InputValue = defaultValue.ToString();
         Type = EInputMenuItemType.Bool;
+    }
+
+    /// <summary>Инициализирует новый элемент меню для ввода длинного целочисленного значения (<see cref="long"/>).</summary>
+    /// <param name="text">Текст-приглашение для ввода.</param>
+    /// <param name="defaultValue">Начальное значение поля.</param>
+    public InputMenuItem(string text, long defaultValue = default) : this(text)
+    {
+        Type = EInputMenuItemType.Long;
+        InputValue = defaultValue.ToString();
+    }
+
+    /// <summary>Инициализирует новый элемент меню для ввода длинного целочисленного значения (<see cref="long"/>) с ограничениями.</summary>
+    /// <param name="text">Текст-приглашение для ввода.</param>
+    /// <param name="defaultValue">Начальное значение поля.</param>
+    /// <param name="minValue">Минимально допустимое значение.</param>
+    /// <param name="maxValue">Максимально допустимое значение.</param>
+    public InputMenuItem(string text, long defaultValue, long minValue, long maxValue) : this(text, defaultValue)
+    {
+        MinValue = minValue.ToString();
+        MaxValue = maxValue.ToString();
+    }
+
+    /// <summary>Инициализирует новый элемент меню для ввода беззнакового длинного целочисленного значения (<see cref="ulong"/>).</summary>
+    /// <param name="text">Текст-приглашение для ввода.</param>
+    /// <param name="defaultValue">Начальное значение поля.</param>
+    public InputMenuItem(string text, ulong defaultValue = default) : this(text)
+    {
+        Type = EInputMenuItemType.ULong;
+        InputValue = defaultValue.ToString();
+    }
+
+    /// <summary>Инициализирует новый элемент меню для ввода беззнакового длинного целочисленного значения (<see cref="ulong"/>) с ограничениями.</summary>
+    /// <param name="text">Текст-приглашение для ввода.</param>
+    /// <param name="defaultValue">Начальное значение поля.</param>
+    /// <param name="minValue">Минимально допустимое значение.</param>
+    /// <param name="maxValue">Максимально допустимое значение.</param>
+    public InputMenuItem(string text, ulong defaultValue, ulong minValue, ulong maxValue) : this(text, defaultValue)
+    {
+        MinValue = minValue.ToString();
+        MaxValue = maxValue.ToString();
     }
     #endregion
 
@@ -175,6 +295,16 @@ public class InputMenuItem
     /// <returns><c>true</c>, если преобразование успешно; иначе <c>false</c>.</returns>
     public bool TryGetDecimal(out decimal value) => decimal.TryParse(InputValue, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
 
+    /// <summary>Пытается преобразовать введённое значение в <see cref="long"/>.</summary>
+    /// <param name="value">Выходной параметр, содержащий преобразованное число, если операция прошла успешно.</param>
+    /// <returns><c>true</c>, если преобразование успешно; иначе <c>false</c>.</returns>
+    public bool TryGetLong(out long value) => long.TryParse(InputValue, out value);
+
+    /// <summary>Пытается преобразовать введённое значение в <see cref="ulong"/>.</summary>
+    /// <param name="value">Выходной параметр, содержащий преобразованное число, если операция прошла успешно.</param>
+    /// <returns><c>true</c>, если преобразование успешно; иначе <c>false</c>.</returns>
+    public bool TryGetULong(out ulong value) => ulong.TryParse(InputValue, out value);
+
     /// <summary>Преобразует введённое значение в <see cref="int"/> или выбрасывает исключение.</summary>
     /// <returns>Целочисленное значение.</returns>
     /// <exception cref="FormatException">Выбрасывается, если <see cref="InputValue"/> имеет неверный формат или представляет число вне диапазона <see cref="int"/>.</exception>
@@ -219,6 +349,16 @@ public class InputMenuItem
     /// <returns>Десятичное значение.</returns>
     /// <exception cref="FormatException">Выбрасывается, если <see cref="InputValue"/> имеет неверный формат.</exception>
     public decimal GetDecimal() => decimal.TryParse(InputValue, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal value) ? value : throw new FormatException($"Значение \"{InputValue}\" не может быть преобразовано в decimal.");
+
+    /// <summary>Преобразует введённое значение в <see cref="long"/> или выбрасывает исключение.</summary>
+    /// <returns>Длинное целочисленное значение.</returns>
+    /// <exception cref="FormatException">Выбрасывается, если <see cref="InputValue"/> имеет неверный формат или представляет число вне диапазона <see cref="long"/>.</exception>
+    public long GetLong() => long.Parse(InputValue);
+
+    /// <summary>Преобразует введённое значение в <see cref="ulong"/> или выбрасывает исключение.</summary>
+    /// <returns>Беззнаковое длинное целочисленное значение.</returns>
+    /// <exception cref="FormatException">Выбрасывается, если <see cref="InputValue"/> имеет неверный формат или представляет число вне диапазона <see cref="ulong"/>.</exception>
+    public ulong GetULong() => ulong.Parse(InputValue);
 
     /// <summary>Преобразует введённое значение в <see cref="bool"/>.<br/>Возвращает <c>false</c>, если значение является пустой строкой или (без учёта регистра) равно "False". Во всех остальных случаях возвращает <c>true</c>.</summary>
     /// <returns><c>true</c>, если значение не является пустой строкой и не равно "False"; иначе <c>false</c>.</returns>
