@@ -304,7 +304,6 @@ internal static class RenderManager
             else
             {
                 Console.BackgroundColor = theme.UnselectedBackgroundColor;
-                Console.ForegroundColor = theme.FieldTextColor;
                 if (isLastPromptLine)
                 {
                     List<string> valueLines = WrapInputValue(value, prompt.Length, lineWidth);
@@ -312,12 +311,26 @@ internal static class RenderManager
                     {
                         int y = itemTop + lineIdx + v;
                         SetCursorPosition(0, y);
-                        string line = (v is 0) ? prompt + valueLines[0] : valueLines[v];
-                        Console.Write(line.PadRight(lineWidth));
+                        if (v is 0)
+                        {
+                            Console.ForegroundColor = theme.TitleTextColor;
+                            Console.Write(prompt);
+                            Console.ForegroundColor = theme.UnselectedTextColor;
+                            Console.Write(valueLines[0]);
+                            Console.Write(new string(' ', lineWidth - (prompt.Length + valueLines[0].Length)));
+                        }
+                        else
+                        {
+                            Console.ForegroundColor = theme.UnselectedTextColor;
+                            Console.Write(valueLines[v].PadRight(lineWidth));
+                        }
                     }
                 }
                 else
+                {
+                    Console.ForegroundColor = theme.TitleTextColor;
                     Console.Write(prompt.PadRight(lineWidth));
+                }
             }
             ResetColor();
         }
