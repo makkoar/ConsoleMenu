@@ -1,28 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>netstandard2.1</TargetFramework>
+		<TargetFrameworks>netstandard2.1;net5.0;net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<PackageId>SkyRez.$(AssemblyName)</PackageId>
 		<Title>Console menu (Консольное меню)</Title>
-		<Authors>makkoar</Authors>
+		<Authors>Eonyx</Authors>
 		<Company>SkyRez</Company>
 		<Description>
 			Cross-platform library for creating interactive console menus with buttons, data input, and extensible elements. Supports .NET Standard 2.1 and higher.
 			Кроссплатформенная библиотека для создания интерактивных консольных меню с поддержкой кнопок, ввода данных и расширяемых элементов. Поддерживает .NET Standard 2.1 и выше.
 		</Description>
 		<RepositoryUrl>https://github.com/makkoar/ConsoleMenu</RepositoryUrl>
-		<PackageTags>Консоль, Console, Menu, Меню, Simple, Простое</PackageTags>
+        <PackageTags>console, menu, interactive, cli, terminal, ui, input, buttons, cross-platform, .NET, library, консоль, меню, интерактив, терминал, интерфейс, кнопки, ввод, кроссплатформенный, библиотека</PackageTags>
 		<ToolCommandName>$(TargetName)</ToolCommandName>
-		<AssemblyVersion>5.6.18.22</AssemblyVersion>
-		<FileVersion>5.6.18.22</FileVersion>
-		<VersionPrefix>5.6.18.22</VersionPrefix>
+		<AssemblyVersion>5.6.30.17</AssemblyVersion>
+		<FileVersion>5.6.30.17</FileVersion>
+		<VersionPrefix>5.6.30.17</VersionPrefix>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<LangVersion>latest</LangVersion>
+		<LangVersion>preview</LangVersion>
 		<PackageOutputPath>..\bin\</PackageOutputPath>
-		<RootNamespace>ConsoleMenu</RootNamespace>
 		<BaseOutputPath>..\bin\</BaseOutputPath>
+		<RootNamespace>ConsoleMenu</RootNamespace>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryType>git</RepositoryType>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
